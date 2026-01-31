@@ -12,10 +12,10 @@ Each week, you'll focus on a different aspect of professional software developme
 
 | Week | Focus | Deliverable | Weight |
 |------|-------|-------------|--------|
-| 1 | Backend Foundation | Working API (bugs fixed) | 20% |
+| 1 | Backend Foundation | Working API (bugs fixed) | 25% |
 | 2 | Documentation & Specs | Fully documented codebase | 25% |
 | 3 | Testing & DevOps | Production-ready backend | 25% |
-| 4 | Full-Stack Integration | Complete application | 30% |
+| 4 | Full-Stack Integration | Complete application | 25% |
 
 **Grading:** Satisfactory (S) if total ≥ 70%, Unsatisfactory (U) if < 70%
 
