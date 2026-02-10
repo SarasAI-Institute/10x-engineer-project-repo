@@ -147,14 +147,25 @@ def create_collection(collection_data: CollectionCreate):
 
 @app.delete("/collections/{collection_id}", status_code=204)
 def delete_collection(collection_id: str):
-    # BUG #4: We delete the collection but don't handle the prompts!
-    # Prompts with this collection_id become orphaned with invalid reference
-    # Should either: delete the prompts, set collection_id to None, or prevent deletion
-    
-    if not storage.delete_collection(collection_id):
+    # Check if collection exists
+    collection = storage.get_collection(collection_id)
+    if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
     
-    # Missing: Handle prompts that belong to this collection!
+    # Unlink prompts from this collection
+    prompts = storage.get_prompts_by_collection(collection_id)
+    for prompt in prompts:
+        # Create a new Prompt object with collection_id=None and updated timestamp
+        updated_prompt = Prompt(
+            id=prompt.id,
+            title=prompt.title,
+            content=prompt.content,
+            description=prompt.description,
+            collection_id=None,
+            created_at=prompt.created_at,
+            updated_at=get_current_time()
+        )
+        storage.update_prompt(prompt.id, updated_prompt)
     
+    storage.delete_collection(collection_id)
     return None
-

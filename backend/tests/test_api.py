@@ -154,10 +154,7 @@ class TestCollections:
     
     def test_delete_collection_with_prompts(self, client: TestClient, sample_collection_data, sample_prompt_data):
         """Test deleting a collection that has prompts.
-        
-        NOTE: Bug #4 - prompts become orphaned after collection deletion.
-        This test documents the current (buggy) behavior.
-        After fixing, update the test to verify correct behavior.
+        Prompts should be unlinked (collection_id=None) rather than deleted.
         """
         # Create collection
         col_response = client.post("/collections", json=sample_collection_data)
@@ -169,12 +166,10 @@ class TestCollections:
         prompt_id = prompt_response.json()["id"]
         
         # Delete collection
-        client.delete(f"/collections/{collection_id}")
+        response = client.delete(f"/collections/{collection_id}")
+        assert response.status_code == 204
         
-        # The prompt still exists but has invalid collection_id
-        # This is Bug #4 - should be handled properly
-        prompts = client.get("/prompts").json()["prompts"]
-        if prompts:
-            # Prompt exists with orphaned collection_id
-            assert prompts[0]["collection_id"] == collection_id
-            # After fix, collection_id should be None or prompt should be deleted
+        # Verify prompt still exists but collection_id is None
+        get_prompt = client.get(f"/prompts/{prompt_id}")
+        assert get_prompt.status_code == 200
+        assert get_prompt.json()["collection_id"] is None
