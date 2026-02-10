@@ -11,7 +11,8 @@ def sort_prompts_by_date(prompts: List[Prompt], descending: bool = True) -> List
     """
     # BUG #3: This sorts ascending (oldest first) when it should sort descending (newest first)
     # The 'descending' parameter is ignored!
-    return sorted(prompts, key=lambda p: p.created_at)
+    # Fix: Use 'reverse' parameter to respect 'descending' flag
+    return sorted(prompts, key=lambda p: p.created_at, reverse=descending)
 
 
 def filter_prompts_by_collection(prompts: List[Prompt], collection_id: str) -> List[Prompt]:
@@ -48,3 +49,4 @@ def extract_variables(content: str) -> List[str]:
     import re
     pattern = r'\{\{(\w+)\}\}'
     return re.findall(pattern, content)
+

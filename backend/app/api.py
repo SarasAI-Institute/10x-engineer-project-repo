@@ -64,14 +64,14 @@ def list_prompts(
 
 @app.get("/prompts/{prompt_id}", response_model=Prompt)
 def get_prompt(prompt_id: str):
-    # BUG #1: This will raise a 500 error if prompt doesn't exist
-    # because we're accessing .id on None
-    # Should return 404 instead!
     prompt = storage.get_prompt(prompt_id)
     
-    # This line causes the bug - accessing attribute on None
-    if prompt.id:
-        return prompt
+    # Fix: Check if prompt is None and raise 404 if it doesn't exist
+    if not prompt:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+    
+    # Return the prompt
+    return prompt
 
 
 @app.post("/prompts", response_model=Prompt, status_code=201)
@@ -125,7 +125,6 @@ def delete_prompt(prompt_id: str):
 
 
 # ============== Collection Endpoints ==============
-
 @app.get("/collections", response_model=CollectionList)
 def list_collections():
     collections = storage.get_all_collections()
@@ -138,7 +137,7 @@ def get_collection(collection_id: str):
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
     return collection
-
+    
 
 @app.post("/collections", response_model=Collection, status_code=201)
 def create_collection(collection_data: CollectionCreate):
@@ -158,3 +157,4 @@ def delete_collection(collection_id: str):
     # Missing: Handle prompts that belong to this collection!
     
     return None
+
