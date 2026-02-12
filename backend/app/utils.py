@@ -2,7 +2,7 @@
 
 from typing import List
 from app.models import Prompt
-
+from datetime import datetime
 
 def sort_prompts_by_date(prompts: List[Prompt], descending: bool = True) -> List[Prompt]:
     """Sort prompts by creation date.
@@ -48,3 +48,14 @@ def extract_variables(content: str) -> List[str]:
     pattern = r'\{\{(\w+)\}\}'
     return re.findall(pattern, content)
 
+def apply_partial_updates(existing_data: Prompt, update_data: PromptUpdate) -> Prompt:
+    """Apply partial updates to a prompt, updating only provided fields."""
+    updated_data = existing_data.dict()
+    update_fields = update_data.dict(exclude_unset=True)
+
+    for key, value in update_fields.items():
+        if key in updated_data:
+            updated_data[key] = value
+
+    updated_data['updated_at'] = datetime.utcnow()
+    return Prompt(**updated_data)

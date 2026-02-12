@@ -4,6 +4,7 @@ These tests verify the API endpoints work correctly.
 Students should expand these tests significantly in Week 3.
 """
 
+import pytest
 from fastapi.testclient import TestClient
 
 
@@ -176,3 +177,56 @@ class TestCollections:
             # Prompt exists with orphaned collection_id
             assert prompts[0]["collection_id"] == collection_id
             # After fix, collection_id should be None or prompt should be deleted
+
+    def test_patch_prompt_partial_update(self, client: TestClient, sample_prompt_data):
+        # Create a prompt first
+        create_response = client.post("/prompts", json=sample_prompt_data)
+        prompt_id = create_response.json()["id"]
+        original_updated_at = create_response.json()["updated_at"]
+
+        # Prepare a PATCH request with partial data
+        patch_data = {"title": "Updated Title"}
+        response = client.patch(f"/prompts/{prompt_id}", json=patch_data)
+        assert response.status_code == 200
+
+        updated_prompt = response.json()
+        assert updated_prompt['title'] == "Updated Title"
+        assert updated_prompt['content'] == sample_prompt_data['content']  # Unchanged
+        assert updated_prompt['updated_at'] != original_updated_at  # Timestamp updates
+
+    def test_patch_prompt_no_fields(self, client: TestClient, sample_prompt_data):
+        # Create a prompt first
+        create_response = client.post("/prompts", json=sample_prompt_data)
+        prompt_id = create_response.json()["id"]
+        original_updated_at = create_response.json()["updated_at"]
+
+        # Send PATCH request with no fields
+        patch_data = {}  # Empty dictionary
+        response = client.patch(f"/prompts/{prompt_id}", json=patch_data)
+        assert response.status_code == 200
+
+        patched_prompt = response.json()
+        assert patched_prompt['title'] == sample_prompt_data['title']  # Unchanged
+        assert patched_prompt['content'] == sample_prompt_data['content']  # Unchanged
+        assert patched_prompt['updated_at'] == original_updated_at  # Timestamp should remain
+
+    def test_patch_prompt_non_existing(self, client: TestClient):
+        # Attempt to PATCH a non-existing prompt
+        patch_data = {"title": "Should Fail"}
+        response = client.patch("/prompts/non_existing_id", json=patch_data)
+        assert response.status_code == 404
+
+    def test_patch_prompt_with_multiple_fields(self, client: TestClient, sample_prompt_data):
+        # Create a prompt first
+        create_response = client.post("/prompts", json=sample_prompt_data)
+        prompt_id = create_response.json()["id"]
+        original_updated_at = create_response.json()["updated_at"]
+
+        patch_data = {"title": "New Title", "content": "New Content"}
+        response = client.patch(f"/prompts/{prompt_id}", json=patch_data)
+        assert response.status_code == 200
+
+        updated_prompt = response.json()
+        assert updated_prompt['title'] == "New Title"
+        assert updated_prompt['content'] == "New Content"
+        assert updated_prompt['updated_at'] != original_updated_at  # Ensure timestamp update
