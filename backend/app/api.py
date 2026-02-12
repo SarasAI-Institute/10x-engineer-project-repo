@@ -70,9 +70,10 @@ def get_prompt(prompt_id: str):
     prompt = storage.get_prompt(prompt_id)
     
     # This line causes the bug - accessing attribute on None
-    if prompt.id:
-        return prompt
-
+    if not prompt:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+    return prompt
+    
 
 @app.post("/prompts", response_model=Prompt, status_code=201)
 def create_prompt(prompt_data: PromptCreate):
@@ -107,7 +108,7 @@ def update_prompt(prompt_id: str, prompt_data: PromptUpdate):
         description=prompt_data.description,
         collection_id=prompt_data.collection_id,
         created_at=existing.created_at,
-        updated_at=existing.updated_at  # BUG: Should be get_current_time()
+        updated_at=get_current_time()  # Corrected to use current time
     )
     
     return storage.update_prompt(prompt_id, updated_prompt)
@@ -125,7 +126,6 @@ def delete_prompt(prompt_id: str):
 
 
 # ============== Collection Endpoints ==============
-
 @app.get("/collections", response_model=CollectionList)
 def list_collections():
     collections = storage.get_all_collections()
@@ -138,7 +138,7 @@ def get_collection(collection_id: str):
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
     return collection
-
+    
 
 @app.post("/collections", response_model=Collection, status_code=201)
 def create_collection(collection_data: CollectionCreate):
@@ -155,6 +155,10 @@ def delete_collection(collection_id: str):
     if not storage.delete_collection(collection_id):
         raise HTTPException(status_code=404, detail="Collection not found")
     
-    # Missing: Handle prompts that belong to this collection!
-    
+    # Handle orphaned prompts
+    prompts = storage.get_prompts_by_collection_id(collection_id)
+    for prompt in prompts:
+        # Option 1: Delete the prompts
+        storage.delete_prompt(prompt.id)
     return None
+

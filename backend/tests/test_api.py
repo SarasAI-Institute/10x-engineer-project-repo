@@ -4,7 +4,6 @@ These tests verify the API endpoints work correctly.
 Students should expand these tests significantly in Week 3.
 """
 
-import pytest
 from fastapi.testclient import TestClient
 
 
