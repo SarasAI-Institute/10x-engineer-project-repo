@@ -151,29 +151,25 @@ class TestCollections:
         response = client.get("/collections/nonexistent-id")
         assert response.status_code == 404
     
-    def test_delete_collection_with_prompts(self, client: TestClient, sample_collection_data, sample_prompt_data):
-        """Test deleting a collection that has prompts.
-        
-        NOTE: Bug #4 - prompts become orphaned after collection deletion.
-        This test documents the current (buggy) behavior.
-        After fixing, update the test to verify correct behavior.
-        """
-        # Create collection
+    def test_delete_collection_moves_prompts_to_uncategorized(self, client: TestClient, sample_collection_data, sample_prompt_data):
+        """Test that deleting a collection moves prompts to 'Uncategorized' (Fix for Bug #4)."""
+        # 1. Create a specific collection
         col_response = client.post("/collections", json=sample_collection_data)
         collection_id = col_response.json()["id"]
         
-        # Create prompt in collection
+        # 2. Create a prompt inside that collection
         prompt_data = {**sample_prompt_data, "collection_id": collection_id}
-        prompt_response = client.post("/prompts", json=prompt_data)
-        prompt_id = prompt_response.json()["id"]
+        client.post("/prompts", json=prompt_data)
         
-        # Delete collection
+        # 3. Delete the collection
         client.delete(f"/collections/{collection_id}")
         
-        # The prompt still exists but has invalid collection_id
-        # This is Bug #4 - should be handled properly
+        # 4. Fetch all collections to find the ID of the new 'Uncategorized' one
+        all_cols = client.get("/collections").json()["collections"]
+        uncategorized_col = next(c for c in all_cols if c["name"] == "Uncategorized")
+        uncategorized_id = uncategorized_col["id"]
+        
+        # 5. Verify the prompt now belongs to 'Uncategorized'
         prompts = client.get("/prompts").json()["prompts"]
-        if prompts:
-            # Prompt exists with orphaned collection_id
-            assert prompts[0]["collection_id"] == collection_id
-            # After fix, collection_id should be None or prompt should be deleted
+        assert prompts[0]["collection_id"] == uncategorized_id
+        assert prompts[0]["collection_id"] != collection_id  # Ensure it changed
