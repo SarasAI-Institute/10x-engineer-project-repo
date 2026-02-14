@@ -4,14 +4,10 @@ from typing import List
 from app.models import Prompt
 
 
-def sort_prompts_by_date(prompts: List[Prompt], descending: bool = True) -> List[Prompt]:
-    """Sort prompts by creation date.
-    
-    Note: There might be a bug here. Check the sort order!
-    """
-    # BUG #3: This sorts ascending (oldest first) when it should sort descending (newest first)
-    # The 'descending' parameter is ignored!
-    return sorted(prompts, key=lambda p: p.created_at)
+
+def sort_prompts_by_date(prompts, descending=True):
+    # Sort based on 'created_at' attribute
+    return sorted(prompts, key=lambda prompt: prompt.created_at, reverse=descending)
 
 
 def filter_prompts_by_collection(prompts: List[Prompt], collection_id: str) -> List[Prompt]:
