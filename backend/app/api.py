@@ -144,17 +144,11 @@ def create_collection(collection_data: CollectionCreate):
 
 @app.delete("/collections/{collection_id}", status_code=204)
 def delete_collection(collection_id: str):
-
-
-
-
     # Fetch and delete all prompts associated with the collection
     for prompt in storage.get_prompts_by_collection(collection_id):
         storage.delete_prompt(prompt.id)  # Delete each prompt
     if not storage.delete_collection(collection_id):
         raise HTTPException(status_code=404, detail="Collection not found")
-    
-
 
     return None
 
