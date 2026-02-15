@@ -64,14 +64,12 @@ def list_prompts(
 
 @app.get("/prompts/{prompt_id}", response_model=Prompt)
 def get_prompt(prompt_id: str):
-    # BUG #1: This will raise a 500 error if prompt doesn't exist
-    # because we're accessing .id on None
-    # Should return 404 instead!
     prompt = storage.get_prompt(prompt_id)
+
+    if prompt is None:
+        raise HTTPException(status_code=404, detail="Prompt not found")
     
-    # This line causes the bug - accessing attribute on None
-    if prompt.id:
-        return prompt
+    return prompt
 
 
 @app.post("/prompts", response_model=Prompt, status_code=201)
@@ -98,8 +96,7 @@ def update_prompt(prompt_id: str, prompt_data: PromptUpdate):
         if not collection:
             raise HTTPException(status_code=400, detail="Collection not found")
     
-    # BUG #2: We're not updating the updated_at timestamp!
-    # The updated prompt keeps the old timestamp
+    # Update the updated_at timestamp with the current time
     updated_prompt = Prompt(
         id=existing.id,
         title=prompt_data.title,
@@ -107,14 +104,23 @@ def update_prompt(prompt_id: str, prompt_data: PromptUpdate):
         description=prompt_data.description,
         collection_id=prompt_data.collection_id,
         created_at=existing.created_at,
-        updated_at=existing.updated_at  # BUG: Should be get_current_time()
+        updated_at=get_current_time()  # Updated to current time
     )
     
     return storage.update_prompt(prompt_id, updated_prompt)
 
 
-# NOTE: PATCH endpoint is missing! Students need to implement this.
-# It should allow partial updates (only update provided fields)
+@app.patch("/prompts/{prompt_id}", response_model=Prompt)
+def patch_prompt(prompt_id: str, prompt_data: PromptUpdate):
+    existing = storage.get_prompt(prompt_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+
+    # Partial update - only update fields that are provided
+    updates = {**existing.model_dump(), **prompt_data.model_dump(exclude_unset=True)}
+    updated_prompt = Prompt(**updates, updated_at=get_current_time())
+
+    return storage.update_prompt(prompt_id, updated_prompt)
 
 
 @app.delete("/prompts/{prompt_id}", status_code=204)
@@ -148,13 +154,33 @@ def create_collection(collection_data: CollectionCreate):
 
 @app.delete("/collections/{collection_id}", status_code=204)
 def delete_collection(collection_id: str):
-    # BUG #4: We delete the collection but don't handle the prompts!
-    # Prompts with this collection_id become orphaned with invalid reference
-    # Should either: delete the prompts, set collection_id to None, or prevent deletion
+    """Delete a collection and orphan its prompts.
     
-    if not storage.delete_collection(collection_id):
+    When a collection is deleted, all prompts that belong to it will have
+    their collection_id set to None. This preserves the prompts while
+    breaking the collection association.
+    
+    Args:
+        collection_id: The ID of the collection to delete.
+        
+    Raises:
+        HTTPException: 404 if collection not found.
+    """
+    # Check if collection exists
+    collection = storage.get_collection(collection_id)
+    if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
     
-    # Missing: Handle prompts that belong to this collection!
+    # Get all prompts in this collection
+    all_prompts = storage.get_all_prompts()
+    prompts_in_collection = [p for p in all_prompts if p.collection_id == collection_id]
     
-    return None
+    # Set collection_id to None for all prompts in this collection
+    for prompt in prompts_in_collection:
+        prompt.collection_id = None
+        prompt.updated_at = get_current_time()
+        storage.update_prompt(prompt.id, prompt)
+    
+    # Now delete the collection
+    storage.delete_collection(collection_id)
+
