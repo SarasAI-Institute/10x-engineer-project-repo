@@ -1,167 +1,152 @@
 # PromptLab
 
-**Your AI Prompt Engineering Platform**
+PromptLab is an internal tool designed for AI engineers to store, organize, and manage their prompts. Built on the FastAPI framework, it provides an efficient and scalable way to handle prompt data.
 
----
+## Features
 
-## Welcome to the Team! 👋
+- Store and manage AI prompts
+- Organize prompts by categories
+- API endpoints for prompt CRUD operations
+- Intuitive user interface for easy prompt management
 
-Congratulations on joining the PromptLab engineering team! You've been brought on to help us build the next generation of prompt engineering tools.
+## Prerequisites and Installation
 
-### What is PromptLab?
+Before you begin, ensure you have met the following requirements:
 
-PromptLab is an internal tool for AI engineers to **store, organize, and manage their prompts**. Think of it as a "Postman for Prompts" — a professional workspace where teams can:
+- Python 3.7 or higher
+- FastAPI
+- Uvicorn
 
-- 📝 Store prompt templates with variables (`{{input}}`, `{{context}}`)
-- 📁 Organize prompts into collections
-- 🏷️ Tag and search prompts
-- 📜 Track version history
-- 🧪 Test prompts with sample inputs
+### Installation
 
-### The Current Situation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/PromptLab.git
+   ```
+2. Change into the project directory:
+   ```bash
+   cd PromptLab
+   ```
+3. Install the dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-The previous developer left us with a *partially working* backend. The core structure is there, but:
+## Quick Start Guide
 
-- There are **several bugs** that need fixing
-- Some **features are incomplete**
-- The **documentation is minimal** (you'll fix that)
-- There are **no tests** worth mentioning
-- **No CI/CD pipeline** exists
-- **No frontend** has been built yet
+1. Run the FastAPI application using Uvicorn:
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+2. Access the application at `http://127.0.0.1:8000`.
 
-Your job over the next 4 weeks is to transform this into a **production-ready, full-stack application**.
+## API Endpoint Summary
 
----
+- **GET /prompts/**: Retrieve a list of all prompts.
 
-## Quick Start
+  **Example Request:**
+  ```bash
+  curl -X GET http://yourapi.com/prompts/
+  ```
 
-### Prerequisites
+- **POST /prompts/**: Create a new prompt.
 
-- Python 3.10+
-- Node.js 18+ (for Week 4)
-- Git
+  **Example Request:**
+  ```bash
+  curl -X POST http://yourapi.com/prompts/ -d '{"title": "New Prompt", "content": "Prompt content"}' -H 'Content-Type: application/json'
+  ```
 
-### Run Locally
+- **GET /prompts/{id}**: Retrieve a prompt by its ID.
+
+  **Example Request:**
+  ```bash
+  curl -X GET http://yourapi.com/prompts/1
+  ```
+
+- **PUT /prompts/{id}**: Update a prompt by its ID.
+
+  **Example Request:**
+  ```bash
+  curl -X PUT http://yourapi.com/prompts/1 -d '{"title": "Updated Title", "content": "Updated content"}' -H 'Content-Type: application/json'
+  ```
+
+- **DELETE /prompts/{id}**: Delete a prompt by its ID.
+
+  **Example Request:**
+  ```bash
+  curl -X DELETE http://yourapi.com/prompts/1
+  ```
+
+
+### Example
+
+Here is a sample curl request to fetch all prompts:
 
 ```bash
-# Clone the repo
-git clone <your-repo-url>
-cd promptlab
-
-# Set up backend
-cd backend
-pip install -r requirements.txt
-python main.py
+curl -X GET "http://127.0.0.1:8000/prompts/" -H "accept: application/json"
 ```
 
-API runs at: http://localhost:8000
+## Development Setup
 
-API docs at: http://localhost:8000/docs
+To contribute to this project, follow these steps:
 
-### Run Tests
+1. Fork the repository.
+2. Create your feature branch (`git checkout -b feature/your-feature`).
+3. Commit your changes (`git commit -m 'Add some feature'`).
+4. Push to the branch (`git push origin feature/your-feature`).
+5. Open a pull request.
 
-```bash
-cd backend
-pytest tests/ -v
+# Contributing to PromptLab
+
+Thank you for considering contributing to this project! We welcome improvements and fixes from the community. Please read through the following guidelines to effectively contribute to the project.
+
+## How to Contribute
+
+1. **Fork the Repository**: Start by forking the repository to your GitHub account.
+
+2. **Clone the Repository**: Clone the forked repository to your local machine.
+
+   ```bash
+   git clone https://github.com/your-username/project-name.git
+   ```
+
+3. **Create a Branch**: For new features or bug fixes, create a new branch from the `main` branch.
+
+   ```bash
+   git checkout -b feature/new-feature
+   ```
+
+4. **Make Changes**: Implement your changes. Ensure your code follows the project's style and includes necessary documentation and tests.
+
+5. **Commit Changes**: Commit your changes with a descriptive commit message.
+
+   ```bash
+   git commit -m "Description of changes"
+   ```
+
+6. **Push Changes**: Push your changes to your forked repository.
+
+   ```bash
+   git push origin feature/new-feature
+   ```
+
+7. **Create a Pull Request**: Navigate to the original repository and open a pull request from your forked repository's branch.
+
+8. **Review Process**: Your pull request will be reviewed by the maintainers. Please be responsive to any requested changes.
+
+## Coding Standards
+
+- Use clear, concise, and descriptive commit messages.
+- Follow the project's coding style and guidelines.
+- Write unit tests for new features or bug fixes.
+
+## Reporting Issues
+
+If you encounter any issues or would like to request a new feature, please open an issue in the GitHub issues tab with a detailed description.
+
+Thank you for your contributions and support!
 ```
 
----
+Now, update the `README.md` file with a brief introduction to the contributing guidelines:
 
-## Project Structure
-
-```
-promptlab/
-├── README.md                    # You are here
-├── PROJECT_BRIEF.md             # Your assignment details
-├── GRADING_RUBRIC.md            # How you'll be graded
-│
-├── backend/
-│   ├── app/
-│   │   ├── __init__.py
-│   │   ├── api.py              # FastAPI routes (has bugs!)
-│   │   ├── models.py           # Pydantic models
-│   │   ├── storage.py          # In-memory storage
-│   │   └── utils.py            # Helper functions
-│   ├── tests/
-│   │   ├── __init__.py
-│   │   ├── test_api.py         # Basic tests
-│   │   └── conftest.py         # Test fixtures
-│   ├── main.py                 # Entry point
-│   └── requirements.txt
-│
-├── frontend/                    # You'll create this in Week 4
-├── specs/                       # You'll create this in Week 2
-├── docs/                        # You'll create this in Week 2
-└── .github/                     # You'll set up CI/CD in Week 3
-```
-
----
-
-## Your Mission
-
-### 🧪 Experimentation Encouraged!
-While we provide guidelines, **you are the engineer**. If you see a better way to solve a problem using AI, do it!
-- Want to swap the storage layer for a real database? **Go for it.**
-- Want to add Authentication? **Do it.**
-- Want to rewrite the API in a different style? **As long as tests pass, you're clear.**
-
-The goal is to learn how to build *better* software *faster* with AI. Don't be afraid to break things and rebuild them better.
-
-### Week 1: Fix the Backend
-- Understand this codebase using AI
-- Find and fix the bugs
-- Implement missing features
-
-### Week 2: Document Everything
-- Write proper documentation
-- Create feature specifications
-- Set up coding standards
-
-### Week 3: Make it Production-Ready
-- Write comprehensive tests
-- Implement new features with TDD
-- Set up CI/CD and Docker
-
-### Week 4: Build the Frontend
-- Create a React frontend
-- Connect it to the backend
-- Polish the user experience
-
----
-
-## API Endpoints (Current)
-
-| Method | Endpoint | Description | Status |
-|--------|----------|-------------|--------|
-| GET | `/health` | Health check | ✅ Works |
-| GET | `/prompts` | List all prompts | ⚠️ Has issues |
-| GET | `/prompts/{id}` | Get single prompt | ❌ Bug |
-| POST | `/prompts` | Create prompt | ✅ Works |
-| PUT | `/prompts/{id}` | Update prompt | ⚠️ Has issues |
-| DELETE | `/prompts/{id}` | Delete prompt | ✅ Works |
-| GET | `/collections` | List collections | ✅ Works |
-| GET | `/collections/{id}` | Get collection | ✅ Works |
-| POST | `/collections` | Create collection | ✅ Works |
-| DELETE | `/collections/{id}` | Delete collection | ❌ Bug |
-
----
-
-## Tech Stack
-
-- **Backend**: Python 3.10+, FastAPI, Pydantic
-- **Frontend**: React, Vite (Week 4)
-- **Testing**: pytest
-- **DevOps**: Docker, GitHub Actions (Week 3)
-
----
-
-## Need Help?
-
-1. **Use AI tools** — This is an AI-assisted coding course!
-2. Read the `PROJECT_BRIEF.md` for detailed instructions
-3. Check `GRADING_RUBRIC.md` to understand expectations
-4. Ask questions in the course forum
-
----
-
-Good luck, and welcome to the team! 🚀
+```markdown README.md
