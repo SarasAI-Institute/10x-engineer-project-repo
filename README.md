@@ -4,163 +4,167 @@
 
 ---
 
-## Welcome to the Team! 👋
+## Project Overview
 
-Congratulations on joining the PromptLab engineering team! You've been brought on to help us build the next generation of prompt engineering tools.
+PromptLab is an internal tool designed for AI engineers to store, organize, and manage their prompts effectively. It's akin to a "Postman for Prompts" — providing a professional environment for managing prompt templates, enabling tagging, searching, version tracking, and prompt testing.
 
-### What is PromptLab?
-
-PromptLab is an internal tool for AI engineers to **store, organize, and manage their prompts**. Think of it as a "Postman for Prompts" — a professional workspace where teams can:
-
-- 📝 Store prompt templates with variables (`{{input}}`, `{{context}}`)
-- 📁 Organize prompts into collections
-- 🏷️ Tag and search prompts
-- 📜 Track version history
-- 🧪 Test prompts with sample inputs
-
-### The Current Situation
-
-The previous developer left us with a *partially working* backend. The core structure is there, but:
-
-- There are **several bugs** that need fixing
-- Some **features are incomplete**
-- The **documentation is minimal** (you'll fix that)
-- There are **no tests** worth mentioning
-- **No CI/CD pipeline** exists
-- **No frontend** has been built yet
-
-Your job over the next 4 weeks is to transform this into a **production-ready, full-stack application**.
+### Features
+- 📝 **Store Prompts**: Save templates with variables (e.g., `{{input}}`, `{{context}}`).
+- 📁 **Collections**: Organize prompts into searchable collections.
+- 🏷️ **Tagging & Search**: Easily find and categorize prompts.
+- 📜 **Version Tracking**: Keep history of prompt changes.
+- 🧪 **Testing**: Test prompts against various inputs.
 
 ---
 
-## Quick Start
+## Setup Instructions
 
 ### Prerequisites
+- **Python**: 3.10+
+- **Node.js**: 18+ (needed for frontend development)
+- **Git**: Version Control System
 
-- Python 3.10+
-- Node.js 18+ (for Week 4)
-- Git
+### Installation
 
-### Run Locally
+1. **Clone the Repository**
+   ```bash
+   git clone <your-repo-url>
+   cd promptlab
+   ```
 
-```bash
-# Clone the repo
-git clone <your-repo-url>
-cd promptlab
+2. **Backend Setup**
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   python main.py
+   ```
+   The API will be running at: [http://localhost:8000](http://localhost:8000)
 
-# Set up backend
-cd backend
-pip install -r requirements.txt
-python main.py
-```
+3. **API Documentation**
+   Access Swagger UI for API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-API runs at: http://localhost:8000
-
-API docs at: http://localhost:8000/docs
-
-### Run Tests
-
-```bash
-cd backend
-pytest tests/ -v
-```
+4. **Running Tests**
+   ```bash
+   cd backend
+   pytest tests/ -v
+   ```
 
 ---
+
+## API Endpoints
+
+| Method | Endpoint            | Description       | Status   |
+|--------|---------------------|-------------------|----------|
+| GET    | `/health`           | Health check      | ✅ Works |
+| GET    | `/prompts`          | List all prompts  | ✅ Works |
+| GET    | `/prompts/{id}`     | Get single prompt | ✅ Works |
+| POST   | `/prompts`          | Create prompt     | ✅ Works |
+| PUT    | `/prompts/{id}`     | Update prompt     | ✅ Works |
+| DELETE | `/prompts/{id}`     | Delete prompt     | ✅ Works |
+| GET    | `/collections`      | List collections  | ✅ Works |
+| GET    | `/collections/{id}` | Get collection    | ✅ Works |
+| POST   | `/collections`      | Create collection | ✅ Works |
+| DELETE | `/collections/{id}` | Delete collection | ✅ Works |
+
+---
+
+## Data Models
+
+### Prompt Models
+
+- `PromptBase`: Shared attributes for prompts such as title, content, description, and collection ID.
+- `PromptCreate`: Used when creating a new prompt, extending `PromptBase`.
+- `PromptUpdate`: Inherits from `PromptBase` for updating prompts.
+- `PromptPatch`: Handles partial updates to a prompt.
+- `Prompt`: Represents a stored prompt with metadata including ID and timestamps.
+
+### Collection Models
+
+- `CollectionBase`: Contains common attributes for collections like name and description.
+- `CollectionCreate`: Used for creating new collections.
+- `Collection`: A fully defined collection with metadata.
+
+### Other Models
+
+- `PromptList`: Represents a list of prompts.
+- `CollectionList`: Represents a list of collections.
+- `HealthResponse`: Provides API health status and version.
+
+---
+
+## Usage Examples
+
+**Adding a New Prompt:**
+
+To add a new prompt, make a POST request to `/prompts` with a JSON payload containing the title and content.
+
+**Fetching All Prompts:**
+
+To retrieve all stored prompts, use a GET request to `/prompts`.
+
+**Managing Collections:**
+
+Collections can be created, listed, and fetched using respective endpoints for organization purposes.
+
+---
+
 
 ## Project Structure
 
-```
 promptlab/
-├── README.md                    # You are here
-├── PROJECT_BRIEF.md             # Your assignment details
-├── GRADING_RUBRIC.md            # How you'll be graded
+├── README.md                      # Documentation for project overview
+├── PROJECT_BRIEF.md               # Assignment details for the project
+├── GRADING_RUBRIC.md              # Grading criteria for the project
 │
-├── backend/
-│   ├── app/
-│   │   ├── __init__.py
-│   │   ├── api.py              # FastAPI routes (has bugs!)
-│   │   ├── models.py           # Pydantic models
-│   │   ├── storage.py          # In-memory storage
-│   │   └── utils.py            # Helper functions
-│   ├── tests/
-│   │   ├── __init__.py
-│   │   ├── test_api.py         # Basic tests
-│   │   └── conftest.py         # Test fixtures
-│   ├── main.py                 # Entry point
-│   └── requirements.txt
+├── backend/                       # Backend directory using FastAPI
+│   ├── app/                       # Application code
+│   │   ├── __init__.py            # Package initialization
+│   │   ├── api.py                 # FastAPI routes (contains some bugs)
+│   │   ├── models.py              # Pydantic data validation models
+│   │   ├── storage.py             # In-memory data storage
+│   │   └── utils.py               # Utility/helper functions
+│   ├── tests/                     # Testing directory
+│   │   ├── __init__.py            # Package initialization for tests
+│   │   ├── test_api.py            # Basic FastAPI route tests
+│   │   └── conftest.py            # Test fixtures setup
+│   ├── main.py                    # Application entry point
+│   └── requirements.txt           # Python dependencies
 │
-├── frontend/                    # You'll create this in Week 4
-├── specs/                       # You'll create this in Week 2
-├── docs/                        # You'll create this in Week 2
-└── .github/                     # You'll set up CI/CD in Week 3
-```
+├── frontend/                      # Placeholder for future frontend development
+├── specs/                         # Specifications for features
+│   ├── prompt-versions.md         # Feature specification for Prompt Versions
+│   └── tagging-system.md          # Feature specification for Tagging System
+├── docs/                          # Documentation directory
+│   ├── .gitkeep                   # Placeholder for git
+│   └── API_REFERENCE.md           # API reference documentation
+└── .github/                       # To be developed in Week 3 for CI/CD setup
 
 ---
 
-## Your Mission
+## Development Workflow
 
-### 🧪 Experimentation Encouraged!
-While we provide guidelines, **you are the engineer**. If you see a better way to solve a problem using AI, do it!
-- Want to swap the storage layer for a real database? **Go for it.**
-- Want to add Authentication? **Do it.**
-- Want to rewrite the API in a different style? **As long as tests pass, you're clear.**
-
-The goal is to learn how to build *better* software *faster* with AI. Don't be afraid to break things and rebuild them better.
-
-### Week 1: Fix the Backend
-- Understand this codebase using AI
-- Find and fix the bugs
-- Implement missing features
-
-### Week 2: Document Everything
-- Write proper documentation
-- Create feature specifications
-- Set up coding standards
-
-### Week 3: Make it Production-Ready
-- Write comprehensive tests
-- Implement new features with TDD
-- Set up CI/CD and Docker
-
-### Week 4: Build the Frontend
-- Create a React frontend
-- Connect it to the backend
-- Polish the user experience
-
----
-
-## API Endpoints (Current)
-
-| Method | Endpoint | Description | Status |
-|--------|----------|-------------|--------|
-| GET | `/health` | Health check | ✅ Works |
-| GET | `/prompts` | List all prompts | ⚠️ Has issues |
-| GET | `/prompts/{id}` | Get single prompt | ❌ Bug |
-| POST | `/prompts` | Create prompt | ✅ Works |
-| PUT | `/prompts/{id}` | Update prompt | ⚠️ Has issues |
-| DELETE | `/prompts/{id}` | Delete prompt | ✅ Works |
-| GET | `/collections` | List collections | ✅ Works |
-| GET | `/collections/{id}` | Get collection | ✅ Works |
-| POST | `/collections` | Create collection | ✅ Works |
-| DELETE | `/collections/{id}` | Delete collection | ❌ Bug |
+- **Week 1**: Fix backend issues, understand codebase, and feature implementation.
+- **Week 2**: Write documentation, create feature specs, and set up coding standards.
+- **Week 3**: Implement a test suite, use Test-Driven Development (TDD), and set up CI/CD via Docker and GitHub Actions.
+- **Week 4**: Develop the frontend using React and Vite, connecting it to the backend.
 
 ---
 
 ## Tech Stack
 
 - **Backend**: Python 3.10+, FastAPI, Pydantic
-- **Frontend**: React, Vite (Week 4)
-- **Testing**: pytest
-- **DevOps**: Docker, GitHub Actions (Week 3)
+- **Frontend**: React, Vite (development planned)
+- **Testing**: Pytest
+- **DevOps**: Docker, GitHub Actions
 
 ---
 
 ## Need Help?
 
-1. **Use AI tools** — This is an AI-assisted coding course!
-2. Read the `PROJECT_BRIEF.md` for detailed instructions
-3. Check `GRADING_RUBRIC.md` to understand expectations
-4. Ask questions in the course forum
+1. Utilize AI coding tools as this is an AI-assisted learning project.
+2. Refer to `PROJECT_BRIEF.md` for comprehensive instructions.
+3. Consult `GRADING_RUBRIC.md` for evaluation criteria.
+4. Engage in the course forum for any questions.
 
 ---
 
