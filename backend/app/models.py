@@ -140,7 +140,18 @@ class CollectionBase(BaseModel):
 class CollectionCreate(CollectionBase):
     """Model for creating a new Collection.
 
-    Inherits all fields from CollectionBase.
+    This class is used to create a new collection and inherits all 
+    fields from the `CollectionBase` class.
+
+    Attributes:
+        name (str): The name of the collection, with a length between 1 and 100 characters.
+        description (Optional[str]): An optional description of the collection, with a maximum length of 500 characters.
+
+    Example usage:
+        collection = CollectionCreate(
+            name="New Collection",
+            description="This is a description of the new collection."
+        )
     """
     pass
 
