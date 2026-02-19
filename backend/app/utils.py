@@ -5,24 +5,59 @@ from app.models import Prompt
 
 
 def sort_prompts_by_date(prompts: List[Prompt], descending: bool = True) -> List[Prompt]:
-    """Sort prompts by creation date.
-    
-    Note: There might be a bug here. Check the sort order!
+    """Sort the list of prompts by their creation date.
+
+    Args:
+        prompts (List[Prompt]): The list of Prompt objects to be sorted.
+        descending (bool): If True, sort the prompts in descending order. Defaults to True.
+
+    Returns:
+        List[Prompt]: The sorted list of prompts.
+
+    Example:
+        >>> sorted_prompts = sort_prompts_by_date(prompts, descending=False)
+        >>> for prompt in sorted_prompts:
+        ...     print(prompt.title)
     """
-    # BUG #3: This sorts ascending (oldest first) when it should sort descending (newest first)
-    # The 'descending' parameter is ignored!
-    return sorted(prompts, key=lambda p: p.created_at)
+    return sorted(prompts, key=lambda p: p.created_at, reverse=descending)
 
 
 def filter_prompts_by_collection(prompts: List[Prompt], collection_id: str) -> List[Prompt]:
+    """Filter prompts by their collection ID.
+
+    Args:
+        prompts (List[Prompt]): The list of Prompt objects to filter.
+        collection_id (str): The collection ID to filter prompts by.
+
+    Returns:
+        List[Prompt]: A list of prompts that belong to the specified collection.
+
+    Example:
+        >>> filtered_prompts = filter_prompts_by_collection(prompts, "12345")
+        >>> for prompt in filtered_prompts:
+        ...     print(prompt.title)
+    """
     return [p for p in prompts if p.collection_id == collection_id]
 
 
 def search_prompts(prompts: List[Prompt], query: str) -> List[Prompt]:
+    """Search for prompts containing the query in their title or description.
+
+    Args:
+        prompts (List[Prompt]): The list of Prompt objects to search within.
+        query (str): The search string to look for in the prompt titles and descriptions.
+    Returns:
+        List[Prompt]: A list of prompts where the query is found in the title or description.
+
+    Example:
+        >>> search_results = search_prompts(prompts, "welcome")
+        >>> for prompt in search_results:
+        ...     print(prompt.title)
+    """
     query_lower = query.lower()
     return [
-        p for p in prompts 
-        if query_lower in p.title.lower() or 
+        p for p in prompts
+        if query_lower in p.title.lower() or
            (p.description and query_lower in p.description.lower())
     ]
 
@@ -48,3 +83,4 @@ def extract_variables(content: str) -> List[str]:
     import re
     pattern = r'\{\{(\w+)\}\}'
     return re.findall(pattern, content)
+
