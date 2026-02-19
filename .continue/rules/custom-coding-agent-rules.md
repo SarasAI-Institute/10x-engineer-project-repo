@@ -1,5 +1,5 @@
 ---
-description: Coding agent Assitant
+description: Coding agent Assistant
 ---
 # Continue Rules
 
