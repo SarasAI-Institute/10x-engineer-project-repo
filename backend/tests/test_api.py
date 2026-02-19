@@ -105,7 +105,7 @@ class TestPrompts:
         
         # NOTE: This assertion will fail due to Bug #2!
         # The updated_at should be different from original
-        # assert data["updated_at"] != original_updated_at  # Uncomment after fix
+        assert data["updated_at"] != original_updated_at  # Uncomment after fix
     
     def test_sorting_order(self, client: TestClient):
         """Test that prompts are sorted newest first.
@@ -154,9 +154,8 @@ class TestCollections:
     def test_delete_collection_with_prompts(self, client: TestClient, sample_collection_data, sample_prompt_data):
         """Test deleting a collection that has prompts.
         
-        NOTE: Bug #4 - prompts become orphaned after collection deletion.
-        This test documents the current (buggy) behavior.
-        After fixing, update the test to verify correct behavior.
+        BUG #4 FIX: When a collection is deleted, all associated prompts should have
+        their collection_id set to None instead of becoming orphaned records.
         """
         # Create collection
         col_response = client.post("/collections", json=sample_collection_data)
@@ -167,13 +166,20 @@ class TestCollections:
         prompt_response = client.post("/prompts", json=prompt_data)
         prompt_id = prompt_response.json()["id"]
         
-        # Delete collection
-        client.delete(f"/collections/{collection_id}")
+        # Verify prompt is associated with collection
+        prompt_before = client.get(f"/prompts/{prompt_id}").json()
+        assert prompt_before["collection_id"] == collection_id
         
-        # The prompt still exists but has invalid collection_id
-        # This is Bug #4 - should be handled properly
-        prompts = client.get("/prompts").json()["prompts"]
-        if prompts:
-            # Prompt exists with orphaned collection_id
-            assert prompts[0]["collection_id"] == collection_id
-            # After fix, collection_id should be None or prompt should be deleted
+        # Delete collection
+        response = client.delete(f"/collections/{collection_id}")
+        assert response.status_code == 204
+        
+        # Verify collection no longer exists
+        col_response = client.get(f"/collections/{collection_id}")
+        assert col_response.status_code == 404
+        
+        # FIXED: Prompt should still exist but with collection_id set to None
+        prompt_after = client.get(f"/prompts/{prompt_id}").json()
+        assert prompt_after["id"] == prompt_id
+        assert prompt_after["collection_id"] is None  # Collection reference cleared
+        assert prompt_after["title"] == sample_prompt_data["title"]  # Content preserved
