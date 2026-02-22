@@ -6,7 +6,7 @@ Students should expand these tests significantly in Week 3.
 
 import pytest
 from fastapi.testclient import TestClient
-
+from app.models import PromptUpdate
 
 class TestHealth:
     """Tests for health endpoint."""
@@ -177,3 +177,26 @@ class TestCollections:
             # Prompt exists with orphaned collection_id
             assert prompts[0]["collection_id"] == collection_id
             # After fix, collection_id should be None or prompt should be deleted
+
+    def test_patch_prompt_partial_update(self, client: TestClient, sample_prompt_data):
+        # Create a prompt first
+        create_response = client.post("/prompts", json=sample_prompt_data)
+        prompt_id = create_response.json()["id"]
+        original_updated_at = create_response.json()["updated_at"]
+
+        # Prepare a PATCH request with partial data using PromptUpdate model
+        # Assuming 'content' needs to be set or validated similarly
+        patch_data = PromptUpdate(title="Updated Title", content=sample_prompt_data['content'])
+        response = client.patch(f"/prompts/{prompt_id}", json=patch_data.dict(exclude_unset=True))
+        assert response.status_code == 200
+
+        updated_prompt = response.json()
+        assert updated_prompt['title'] == "Updated Title"
+        assert updated_prompt['content'] == sample_prompt_data['content']  # Unchanged as it's passed as the same
+        assert updated_prompt['updated_at'] != original_updated_at  # Timestamp updates
+
+    def test_patch_prompt_non_existing(self, client: TestClient):
+        # Attempt to PATCH a non-existing prompt with both required fields
+        patch_data = PromptUpdate(title="Should Fail", content="Content for non-existing")
+        response = client.patch("/prompts/non_existing_id", json=patch_data.dict(exclude_unset=True))
+        assert response.status_code == 404
