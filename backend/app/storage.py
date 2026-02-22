@@ -5,7 +5,7 @@ In a production environment, this would be replaced with a database.
 """
 
 from typing import Dict, List, Optional
-from app.models import Prompt, Collection
+from app.models import Prompt, Collection, get_current_time
 
 
 class Storage:
@@ -28,6 +28,16 @@ class Storage:
     def update_prompt(self, prompt_id: str, prompt: Prompt) -> Optional[Prompt]:
         if prompt_id not in self._prompts:
             return None
+        # Ensure updated_at reflects the update time
+        try:
+            prompt = prompt.model_copy(update={"updated_at": get_current_time()})
+        except Exception:
+            # Fallback: if model_copy isn't available (older pydantic), set attribute
+            try:
+                prompt.updated_at = get_current_time()
+            except Exception:
+                pass
+
         self._prompts[prompt_id] = prompt
         return prompt
     
@@ -51,7 +61,24 @@ class Storage:
     
     def delete_collection(self, collection_id: str) -> bool:
         if collection_id in self._collections:
+            # Remove the collection
             del self._collections[collection_id]
+
+            # Orphan prompts that referenced this collection by setting collection_id to None
+            for pid, p in list(self._prompts.items()):
+                try:
+                    if p.collection_id == collection_id:
+                        try:
+                            newp = p.model_copy(update={"collection_id": None})
+                        except Exception:
+                            # fallback to attribute assignment
+                            p.collection_id = None
+                            newp = p
+                        self._prompts[pid] = newp
+                except Exception:
+                    # If prompt object shape unexpected, skip
+                    continue
+
             return True
         return False
     

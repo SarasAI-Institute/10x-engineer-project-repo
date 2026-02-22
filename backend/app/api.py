@@ -8,6 +8,7 @@ from app.models import (
     Prompt, PromptCreate, PromptUpdate,
     Collection, CollectionCreate,
     PromptList, CollectionList, HealthResponse,
+    TagList, TagAdd,
     get_current_time
 )
 from app.storage import storage
@@ -43,7 +44,8 @@ def health_check():
 @app.get("/prompts", response_model=PromptList)
 def list_prompts(
     collection_id: Optional[str] = None,
-    search: Optional[str] = None
+    search: Optional[str] = None,
+    tag: Optional[str] = None
 ):
     prompts = storage.get_all_prompts()
     
@@ -55,6 +57,10 @@ def list_prompts(
     if search:
         prompts = search_prompts(prompts, search)
     
+    # Filter by tag if specified
+    if tag:
+        prompts = [p for p in prompts if tag.lower() in p.tags]
+    
     # Sort by date (newest first)
     # Note: There might be an issue with the sorting...
     prompts = sort_prompts_by_date(prompts, descending=True)
@@ -64,14 +70,10 @@ def list_prompts(
 
 @app.get("/prompts/{prompt_id}", response_model=Prompt)
 def get_prompt(prompt_id: str):
-    # BUG #1: This will raise a 500 error if prompt doesn't exist
-    # because we're accessing .id on None
-    # Should return 404 instead!
     prompt = storage.get_prompt(prompt_id)
-    
-    # This line causes the bug - accessing attribute on None
-    if prompt.id:
-        return prompt
+    if not prompt:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+    return prompt
 
 
 @app.post("/prompts", response_model=Prompt, status_code=201)
@@ -82,7 +84,11 @@ def create_prompt(prompt_data: PromptCreate):
         if not collection:
             raise HTTPException(status_code=400, detail="Collection not found")
     
-    prompt = Prompt(**prompt_data.model_dump())
+    # Normalize tags to lowercase
+    prompt_dict = prompt_data.model_dump()
+    prompt_dict['tags'] = [tag.lower() for tag in prompt_dict.get('tags', [])]
+    
+    prompt = Prompt(**prompt_dict)
     return storage.create_prompt(prompt)
 
 
@@ -100,17 +106,64 @@ def update_prompt(prompt_id: str, prompt_data: PromptUpdate):
     
     # BUG #2: We're not updating the updated_at timestamp!
     # The updated prompt keeps the old timestamp
+    # For PUT, replace all fields — fall back to existing values if not provided
+    title = prompt_data.title if getattr(prompt_data, 'title', None) is not None else existing.title
+    content = prompt_data.content if getattr(prompt_data, 'content', None) is not None else existing.content
+    description = prompt_data.description if getattr(prompt_data, 'description', None) is not None else existing.description
+    collection_id = prompt_data.collection_id if getattr(prompt_data, 'collection_id', None) is not None else existing.collection_id
+    tags = prompt_data.tags if getattr(prompt_data, 'tags', None) is not None else existing.tags
+    # Normalize tags to lowercase
+    if tags:
+        tags = [tag.lower() for tag in tags]
+
     updated_prompt = Prompt(
         id=existing.id,
-        title=prompt_data.title,
-        content=prompt_data.content,
-        description=prompt_data.description,
-        collection_id=prompt_data.collection_id,
+        title=title,
+        content=content,
+        description=description,
+        collection_id=collection_id,
+        tags=tags,
         created_at=existing.created_at,
-        updated_at=existing.updated_at  # BUG: Should be get_current_time()
+        updated_at=get_current_time()
     )
-    
+
     return storage.update_prompt(prompt_id, updated_prompt)
+
+
+@app.patch("/prompts/{prompt_id}", response_model=Prompt)
+def patch_prompt(prompt_id: str, prompt_data: PromptUpdate):
+    existing = storage.get_prompt(prompt_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+
+    # Validate collection if provided
+    if getattr(prompt_data, 'collection_id', None):
+        collection = storage.get_collection(prompt_data.collection_id)
+        if not collection:
+            raise HTTPException(status_code=400, detail="Collection not found")
+
+    # Only update provided fields
+    title = prompt_data.title if getattr(prompt_data, 'title', None) is not None else existing.title
+    content = prompt_data.content if getattr(prompt_data, 'content', None) is not None else existing.content
+    description = prompt_data.description if getattr(prompt_data, 'description', None) is not None else existing.description
+    collection_id = prompt_data.collection_id if getattr(prompt_data, 'collection_id', None) is not None else existing.collection_id
+    tags = prompt_data.tags if getattr(prompt_data, 'tags', None) is not None else existing.tags
+    # Normalize tags to lowercase
+    if tags and prompt_data.tags is not None:
+        tags = [tag.lower() for tag in tags]
+
+    patched = Prompt(
+        id=existing.id,
+        title=title,
+        content=content,
+        description=description,
+        collection_id=collection_id,
+        tags=tags,
+        created_at=existing.created_at,
+        updated_at=get_current_time()
+    )
+
+    return storage.update_prompt(prompt_id, patched)
 
 
 # NOTE: PATCH endpoint is missing! Students need to implement this.
@@ -148,13 +201,65 @@ def create_collection(collection_data: CollectionCreate):
 
 @app.delete("/collections/{collection_id}", status_code=204)
 def delete_collection(collection_id: str):
-    # BUG #4: We delete the collection but don't handle the prompts!
-    # Prompts with this collection_id become orphaned with invalid reference
-    # Should either: delete the prompts, set collection_id to None, or prevent deletion
-    
     if not storage.delete_collection(collection_id):
         raise HTTPException(status_code=404, detail="Collection not found")
+
+    # Prompts that referenced this collection are now orphaned (collection_id set to None)
+    return None
+
+
+# ============== Tag Endpoints ==============
+
+@app.get("/tags", response_model=TagList)
+def get_all_tags():
+    """Get all unique tags across all prompts."""
+    prompts = storage.get_all_prompts()
+    all_tags = set()
+    for prompt in prompts:
+        all_tags.update(prompt.tags)
+    return TagList(tags=sorted(list(all_tags)))
+
+
+@app.post("/prompts/{prompt_id}/tags", response_model=Prompt)
+def add_tag_to_prompt(prompt_id: str, tag_data: TagAdd):
+    """Add a tag to a prompt."""
+    prompt = storage.get_prompt(prompt_id)
+    if not prompt:
+        raise HTTPException(status_code=404, detail="Prompt not found")
     
-    # Missing: Handle prompts that belong to this collection!
+    # Normalize tag to lowercase and strip whitespace
+    tag = tag_data.tag.strip().lower()
     
+    # Validate tag is not empty after stripping
+    if not tag:
+        raise HTTPException(status_code=422, detail="Tag cannot be empty or whitespace only")
+    
+    # Add tag if not already present (avoid duplicates)
+    if tag not in prompt.tags:
+        prompt.tags.append(tag)
+    
+    # Update the prompt
+    updated = storage.update_prompt(prompt_id, prompt)
+    return updated
+
+
+@app.delete("/prompts/{prompt_id}/tags/{tag}", status_code=204)
+def remove_tag_from_prompt(prompt_id: str, tag: str):
+    """Remove a tag from a prompt."""
+    prompt = storage.get_prompt(prompt_id)
+    if not prompt:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+    
+    # Normalize tag to lowercase
+    tag = tag.lower()
+    
+    # Check if tag exists
+    if tag not in prompt.tags:
+        raise HTTPException(status_code=404, detail="Tag not found on this prompt")
+    
+    # Remove the tag
+    prompt.tags.remove(tag)
+    
+    # Update the prompt
+    storage.update_prompt(prompt_id, prompt)
     return None
