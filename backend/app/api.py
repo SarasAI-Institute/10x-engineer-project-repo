@@ -64,14 +64,10 @@ def list_prompts(
 
 @app.get("/prompts/{prompt_id}", response_model=Prompt)
 def get_prompt(prompt_id: str):
-    # BUG #1: This will raise a 500 error if prompt doesn't exist
-    # because we're accessing .id on None
-    # Should return 404 instead!
     prompt = storage.get_prompt(prompt_id)
-    
-    # This line causes the bug - accessing attribute on None
-    if prompt.id:
-        return prompt
+    if not prompt:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+    return prompt
 
 
 @app.post("/prompts", response_model=Prompt, status_code=201)
@@ -100,17 +96,54 @@ def update_prompt(prompt_id: str, prompt_data: PromptUpdate):
     
     # BUG #2: We're not updating the updated_at timestamp!
     # The updated prompt keeps the old timestamp
+    # For PUT, replace all fields — fall back to existing values if not provided
+    title = prompt_data.title if getattr(prompt_data, 'title', None) is not None else existing.title
+    content = prompt_data.content if getattr(prompt_data, 'content', None) is not None else existing.content
+    description = prompt_data.description if getattr(prompt_data, 'description', None) is not None else existing.description
+    collection_id = prompt_data.collection_id if getattr(prompt_data, 'collection_id', None) is not None else existing.collection_id
+
     updated_prompt = Prompt(
         id=existing.id,
-        title=prompt_data.title,
-        content=prompt_data.content,
-        description=prompt_data.description,
-        collection_id=prompt_data.collection_id,
+        title=title,
+        content=content,
+        description=description,
+        collection_id=collection_id,
         created_at=existing.created_at,
-        updated_at=existing.updated_at  # BUG: Should be get_current_time()
+        updated_at=get_current_time()
     )
-    
+
     return storage.update_prompt(prompt_id, updated_prompt)
+
+
+@app.patch("/prompts/{prompt_id}", response_model=Prompt)
+def patch_prompt(prompt_id: str, prompt_data: PromptUpdate):
+    existing = storage.get_prompt(prompt_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+
+    # Validate collection if provided
+    if getattr(prompt_data, 'collection_id', None):
+        collection = storage.get_collection(prompt_data.collection_id)
+        if not collection:
+            raise HTTPException(status_code=400, detail="Collection not found")
+
+    # Only update provided fields
+    title = prompt_data.title if getattr(prompt_data, 'title', None) is not None else existing.title
+    content = prompt_data.content if getattr(prompt_data, 'content', None) is not None else existing.content
+    description = prompt_data.description if getattr(prompt_data, 'description', None) is not None else existing.description
+    collection_id = prompt_data.collection_id if getattr(prompt_data, 'collection_id', None) is not None else existing.collection_id
+
+    patched = Prompt(
+        id=existing.id,
+        title=title,
+        content=content,
+        description=description,
+        collection_id=collection_id,
+        created_at=existing.created_at,
+        updated_at=get_current_time()
+    )
+
+    return storage.update_prompt(prompt_id, patched)
 
 
 # NOTE: PATCH endpoint is missing! Students need to implement this.
@@ -148,13 +181,8 @@ def create_collection(collection_data: CollectionCreate):
 
 @app.delete("/collections/{collection_id}", status_code=204)
 def delete_collection(collection_id: str):
-    # BUG #4: We delete the collection but don't handle the prompts!
-    # Prompts with this collection_id become orphaned with invalid reference
-    # Should either: delete the prompts, set collection_id to None, or prevent deletion
-    
     if not storage.delete_collection(collection_id):
         raise HTTPException(status_code=404, detail="Collection not found")
-    
-    # Missing: Handle prompts that belong to this collection!
-    
+
+    # Prompts that referenced this collection are now orphaned (collection_id set to None)
     return None

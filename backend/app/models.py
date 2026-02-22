@@ -1,6 +1,6 @@
 """Pydantic models for PromptLab"""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 from pydantic import BaseModel, Field
 from uuid import uuid4
@@ -11,7 +11,7 @@ def generate_id() -> str:
 
 
 def get_current_time() -> datetime:
-    return datetime.utcnow()
+    return datetime.now(timezone.utc)
 
 
 # ============== Prompt Models ==============
@@ -27,8 +27,11 @@ class PromptCreate(PromptBase):
     pass
 
 
-class PromptUpdate(PromptBase):
-    pass
+class PromptUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    description: Optional[str] = None
+    collection_id: Optional[str] = None
 
 
 class Prompt(PromptBase):
@@ -36,8 +39,7 @@ class Prompt(PromptBase):
     created_at: datetime = Field(default_factory=get_current_time)
     updated_at: datetime = Field(default_factory=get_current_time)
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 # ============== Collection Models ==============
@@ -55,8 +57,7 @@ class Collection(CollectionBase):
     id: str = Field(default_factory=generate_id)
     created_at: datetime = Field(default_factory=get_current_time)
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 # ============== Response Models ==============
