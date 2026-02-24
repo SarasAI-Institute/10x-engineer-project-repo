@@ -240,10 +240,12 @@ def patch_prompt(prompt_id: str, prompt_data: PromptPatch):
             raise HTTPException(status_code=400, detail="Collection not found")
 
     # Apply only provided updates
-    updated_prompt = existing.copy(update=prompt_data.dict(exclude_unset=True))
+    updates = prompt_data.model_dump(exclude_unset=True)
+    updated_prompt = existing.model_copy(update=updates)
 
-    # Ensure updated_at timestamp is updated
-    updated_prompt.updated_at = get_current_time()
+    # Update the updated_at timestamp only if actual fields have been updated
+    if updates:
+        updated_prompt.updated_at = get_current_time()
 
     return storage.update_prompt(prompt_id, updated_prompt)
 
