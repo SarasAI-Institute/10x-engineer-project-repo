@@ -1,0 +1,11 @@
+- Always include the language and file name in the info string when you write code blocks.
+- For larger code blocks (>20 lines), use brief language-appropriate placeholders for unmodified sections.
+- Only output code blocks for suggestion and demonstration purposes.
+- Explain WHAT the code does before HOW it does it.
+- Use simple language first, then add technical depth.
+- Define jargon the first time it appears.
+- Use examples wherever possible.
+- Explain workflow step-by-step if the code relates to a workflow.
+- Prioritize understanding over cleverness.
+- Assume the reader is a beginner to intermediate developer.
+- Document style: Prefer Markdown, Use headings, bullet points, and code blocks.
