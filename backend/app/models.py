@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field
 from uuid import uuid4
+from typing import TYPE_CHECKING
 
 
 def generate_id() -> str:
@@ -78,6 +79,7 @@ class PromptPatch(BaseModel):
     description: Optional[str] = None
     collection_id: Optional[str] = None
 
+    
 class Prompt(PromptBase):
     """Complete model representing a stored prompt with metadata.
 
@@ -95,10 +97,27 @@ class Prompt(PromptBase):
     id: str = Field(default_factory=generate_id)
     created_at: datetime = Field(default_factory=get_current_time)
     updated_at: datetime = Field(default_factory=get_current_time)
+    versions: List['PromptVersions'] = Field(default_factory=list)
 
     class Config:
         from_attributes = True
 
+class PromptVersions(BaseModel):
+    """Model representing a version of a prompt.
+
+    Attributes:
+        version_id (str): A unique identifier for this version of the prompt.
+        prompt_data (Prompt): The data of the prompt at this version.
+        timestamp (datetime): The time when this version was created, defaults
+            to the current time on creation.
+
+    """
+    version_id: str
+    prompt_data: Prompt
+    timestamp: datetime = Field(default_factory=get_current_time)
+    version_id: str
+    prompt_data: Prompt
+    timestamp: datetime = Field(default_factory=get_current_time)
 
 # ============== Collection Models ==============
 

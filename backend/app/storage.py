@@ -5,12 +5,12 @@ In a production environment, this would be replaced with a database.
 """
 
 from typing import Dict, List, Optional
-from app.models import Prompt, Collection
+from app.models import Prompt, Collection, PromptVersions , generate_id # Ensure PromptVersions is imported
 class Storage:
     def __init__(self):
         self._prompts: Dict[str, Prompt] = {}
         self._collections: Dict[str, Collection] = {}
-    
+        self._prompt_versions: Dict[str, List[PromptVersions]] = {}
     # ============== Prompt Operations ==============
     
     def create_prompt(self, prompt: Prompt) -> Prompt:
@@ -99,6 +99,47 @@ class Storage:
             del self._prompts[prompt_id]
             return True
         return False
+    
+    def create_prompt_version(self, prompt_id: str, prompt_data: Prompt):
+        """
+        Create a new version record for a prompt before updating.
+
+        Stores a version record of a prompt using its ID before the prompt is updated. This ensures that previous versions can be retrieved later.
+
+        Args:
+            prompt_id (str): The unique identifier of the prompt.
+            prompt_data (Prompt): The current prompt data that will be stored as a version.
+
+        Example Usage:
+            >>> prompt_data = Prompt(id="p1", ...)
+            >>> storage.create_prompt_version("p1", prompt_data)
+        """
+        if prompt_id in self._prompts:
+            version = PromptVersions(
+                version_id=generate_id(),
+                prompt_data=prompt_data
+            )
+            if prompt_id not in self._prompt_versions:
+                self._prompt_versions[prompt_id] = []
+            self._prompt_versions[prompt_id].append(version)
+    
+    def get_prompt_versions(self, prompt_id: str) -> Optional[List[PromptVersions]]:
+        """
+        Retrieve all version records of a specific prompt.
+
+        Fetches a list of all stored versions for the given prompt ID from storage.
+
+        Args:
+            prompt_id (str): The unique identifier of the prompt for which versions are requested.
+
+        Returns:
+            Optional[List[PromptVersions]]: A list of prompt versions if available, or an empty list if none exist.
+
+        Example Usage:
+            >>> versions = storage.get_prompt_versions("p1")
+        """
+        return self._prompt_versions.get(prompt_id, [])
+
     
     # ============== Collection Operations ==============
     

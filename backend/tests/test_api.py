@@ -153,6 +153,39 @@ class TestCollections:
         
         prompts = client.get("/prompts").json()["prompts"]
         assert all(prompt["collection_id"] == uncategorized_id for prompt in prompts)  # All moved
+    
+    def test_create_prompt_version(self, client: TestClient, sample_prompt_data):
+        """Test creating a new version of a prompt.
+
+        This involves creating a prompt, updating its content, and then verifying
+        that a new version record was created.
+
+        Args:
+            client (TestClient): The test client for sending requests to the API.
+            sample_prompt_data (dict): Sample data for creating and updating a prompt.
+
+        Raises:
+            AssertionError: If the API responses are not as expected or the
+                            number of versions is not correct.
+
+        Example Usage:
+            >>> self.test_create_prompt_version(client, sample_prompt_data)
+        """
+        # Create a new prompt
+        response = client.post("/prompts", json=sample_prompt_data)
+        assert response.status_code == 201
+        prompt_id = response.json()["id"]
+
+        # Update the prompt to create a new version
+        updated_data = sample_prompt_data.copy()
+        updated_data["content"] = "Updated content"
+        update_response = client.put(f"/prompts/{prompt_id}", json=updated_data)
+        assert update_response.status_code == 200
+
+        # Check if a new version was recorded
+        version_response = client.get(f"/prompts/{prompt_id}/versions")
+        assert version_response.status_code == 200
+        assert len(version_response.json()) == 1  
 
 class TestPromptEdgeCases:
     """Edge cases for prompt endpoints."""

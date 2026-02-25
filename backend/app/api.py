@@ -2,10 +2,10 @@
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional
+from typing import Optional, List
 
 from app.models import (
-    Prompt, PromptCreate, PromptUpdate,PromptPatch,
+    Prompt, PromptCreate, PromptUpdate,PromptPatch,PromptVersions,
     Collection, CollectionCreate,
     PromptList, CollectionList, HealthResponse,
     get_current_time
@@ -102,7 +102,6 @@ def list_prompts(
     
     return PromptList(prompts=prompts, total=len(prompts))
 
-
 """Retrieve a prompt by its unique identifier.
 
 This function fetches a specific prompt from the storage based on the provided
@@ -126,8 +125,6 @@ Example Usage:
 @app.get("/prompts/{prompt_id}", response_model=Prompt)
 def get_prompt(prompt_id: str):
     return check_and_get_resource(storage.get_prompt, prompt_id, "Prompt")
-
-
 
 """Create a new prompt.
 
@@ -181,6 +178,7 @@ def create_prompt(prompt_data: PromptCreate):
 @app.put("/prompts/{prompt_id}", response_model=Prompt)
 def update_prompt(prompt_id: str, prompt_data: PromptUpdate):
     existing = check_and_get_resource(storage.get_prompt, prompt_id, "Prompt")
+    storage.create_prompt_version(prompt_id, existing)
     if prompt_data.collection_id:
         check_and_get_resource(storage.get_collection, prompt_data.collection_id, "Collection")
 
@@ -255,6 +253,31 @@ def delete_prompt(prompt_id: str):
         raise HTTPException(status_code=404, detail="Prompt not found")
     return None
 
+"""Retrieve version history for a specific prompt.
+
+    Fetches all versions associated with a given prompt ID from storage.
+    If no versions are found, raises a 404 error.
+
+    Args:
+        prompt_id (str): The unique identifier of the prompt for which versions are requested.
+
+    Returns:
+        List[PromptVersions]: A list containing all versions of the specified prompt.
+
+    Raises:
+        HTTPException: If no versions are found for the given prompt ID, raises a 404 error
+                       with the message "No versions found for this prompt".
+
+    Example Usage:
+        >>> get_prompt_versions("abc123")
+    """
+@app.get("/prompts/{prompt_id}/versions", response_model=List[PromptVersions])
+def get_prompt_versions(prompt_id: str):
+    check_and_get_resource(storage.get_prompt, prompt_id, "Prompt")
+    versions = storage.get_prompt_versions(prompt_id)
+    if not versions:
+        raise HTTPException(status_code=404, detail="No versions found for this prompt")
+    return versions
 
 # ============== Collection Endpoints ==============
 
