@@ -15,6 +15,24 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 class Tag(BaseModel):
+    """Model representing a tag used for categorization in the system.
+
+    Attributes:
+        id (UUID): Unique identifier for the tag.
+        name (str): The name of the tag, with a length between 1 and 50 characters.
+        created_by (str): Identifier for the user who created the tag.
+        created_at (datetime): Timestamp when the tag was created.
+        updated_at (datetime): Timestamp when the tag was last updated.
+
+    Example:
+        Tag(
+            id=UUID('12345678-1234-5678-1234-567812345678'),
+            name="Urgent",
+            created_by="user1",
+            created_at=datetime(...),
+            updated_at=datetime(...)
+        )
+    """
     id: UUID
     name: str = Field(..., min_length=1, max_length=50)
     created_by: str
@@ -22,10 +40,43 @@ class Tag(BaseModel):
     updated_at: datetime
 
 class TagCreate(BaseModel):
+    """Model for creating a new tag.
+
+    This class defines the structure for data required to create a new tag,
+    including the name and creator of the tag.
+
+    Attributes:
+        name (str): The name of the tag, must be between 1 and 50 characters.
+        created_by (str): Identifier for the user creating the tag.
+
+    Example:
+        TagCreate(
+            name="Important",
+            created_by="user1"
+        )
+    """
     name: str = Field(..., min_length=1, max_length=50)
     created_by: str
 
 class PromptTag(BaseModel):
+    """Model representing the association between a prompt and a tag.
+
+    This model is used to link prompts with their respective tags, including metadata about the creation of the association.
+
+    Attributes:
+        id (UUID): Unique identifier for the prompt-tag association.
+        prompt_id (str): The ID of the prompt being tagged.
+        tag_id (UUID): The ID of the tag applied to the prompt.
+        created_at (datetime): Timestamp indicating when the association was created.
+
+    Example:
+        PromptTag(
+            id=UUID('12345678-1234-5678-1234-567812345678'),
+            prompt_id='prompt1',
+            tag_id=UUID('87654321-4321-8765-4321-876543218765'),
+            created_at=datetime(...)
+        )
+    """
     id: UUID
     prompt_id: str
     tag_id: UUID

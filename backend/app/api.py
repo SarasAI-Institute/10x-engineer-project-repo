@@ -44,6 +44,20 @@ router = APIRouter()
 
 @app.post("/tags", response_model=Tag)
 def create_tag(tag: TagCreate):
+    """Create a new tag.
+
+    Args:
+        tag (TagCreate): An object containing details for the new tag to be created.
+
+    Returns:
+        Tag: The newly created tag.
+
+    Raises:
+        HTTPException: If the tag name already exists, a 400 status code is returned.
+
+    Example usage:
+        >>> create_tag(TagCreate(name="New Tag", created_by="user1"))
+    """
     if any(t.name.lower() == tag.name.lower() for t in storage.get_tags()):
         raise HTTPException(status_code=400, detail="Duplicate tag name")
 
@@ -59,6 +73,20 @@ def get_tags():
 
 @app.post("/prompts/{prompt_id}/tags")
 def assign_tag(prompt_id: str, request: AssignTagRequest):
+    """Assign a tag to a specific prompt.
+    Args:
+        prompt_id (str): The ID of the prompt to which the tag will be assigned.
+        request (AssignTagRequest): A request object containing the ID of the tag to assign.
+
+    Returns:
+        None: The function performs the assignment operation and raises an HTTPException in case of an error.
+
+    Raises:
+        HTTPException: If the tag ID is invalid, a 400 status code is returned.
+
+    Example usage:
+        >>> assign_tag("prompt1", AssignTagRequest(tag_id="tag1"))
+    """
     try:
         return storage.assign_tag_to_prompt(
             prompt_id,
@@ -70,6 +98,20 @@ def assign_tag(prompt_id: str, request: AssignTagRequest):
 
 @app.put("/tags/{tag_id}")
 def update_tag(tag_id: str, request: UpdateTagRequest):
+    """Update the name of an existing tag.
+    Args:
+        tag_id (str): The ID of the tag to be updated.
+        request (UpdateTagRequest): A request object containing the new name for the tag.
+
+    Returns:
+        None: The function performs the update operation and raises an HTTPException in case of an error.
+
+    Raises:
+        HTTPException: If the tag ID is invalid, a 400 status code is returned.
+
+    Example usage:
+        >>> update_tag("tag1", UpdateTagRequest(new_name="Updated Tag Name"))
+    """
     try:
         return storage.update_tag_name(
             UUID(tag_id),
@@ -81,6 +123,20 @@ def update_tag(tag_id: str, request: UpdateTagRequest):
 
 @app.delete("/prompts/{prompt_id}/tags/{tag_id}")
 def remove_tag(prompt_id: str, tag_id: str):
+    """Remove a tag from a specific prompt.
+    Args:
+        prompt_id (str): The ID of the prompt from which the tag is to be removed.
+        tag_id (str): The ID of the tag to remove from the prompt.
+
+    Returns:
+        None: The function returns nothing, but raises an HTTPException in case of an error.
+
+    Raises:
+        HTTPException: If the tag ID is invalid, a 400 status code is returned.
+
+    Example usage:
+        >>> remove_tag("prompt1", "tag1")
+    """
     try:
         from uuid import UUID
         return storage.remove_tag_from_prompt(prompt_id, UUID(tag_id))
