@@ -3,6 +3,10 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
+from fastapi import APIRouter, HTTPException
+from app.models import TagCreate, Tag
+from app.models import AssignTagRequest, UpdateTagRequest
+from uuid import UUID
 
 from app.models import (
     Prompt, PromptCreate, PromptUpdate,
@@ -31,6 +35,59 @@ app.add_middleware(
 )
 
 
+
+
+router = APIRouter()
+
+
+# ============== Tag Endpoints ==============
+
+@app.post("/tags", response_model=Tag)
+def create_tag(tag: TagCreate):
+    if any(t.name.lower() == tag.name.lower() for t in storage.get_tags()):
+        raise HTTPException(status_code=400, detail="Duplicate tag name")
+
+    return storage.create_tag(tag.name, tag.created_by)
+
+
+@app.get("/tags", response_model=list[Tag])
+def get_tags():
+    return storage.get_tags()
+
+
+
+
+@app.post("/prompts/{prompt_id}/tags")
+def assign_tag(prompt_id: str, request: AssignTagRequest):
+    try:
+        return storage.assign_tag_to_prompt(
+            prompt_id,
+            UUID(request.tag_id)
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.put("/tags/{tag_id}")
+def update_tag(tag_id: str, request: UpdateTagRequest):
+    try:
+        return storage.update_tag_name(
+            UUID(tag_id),
+            request.new_name
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.delete("/prompts/{prompt_id}/tags/{tag_id}")
+def remove_tag(prompt_id: str, tag_id: str):
+    try:
+        from uuid import UUID
+        return storage.remove_tag_from_prompt(prompt_id, UUID(tag_id))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 # ============== Health Check ==============
 
 @app.get("/health", response_model=HealthResponse)
@@ -45,6 +102,9 @@ def health_check():
         HealthResponse(status="healthy", version="1.0.0")
     """
     return HealthResponse(status="healthy", version=__version__)
+
+
+
 
 
 # ============== Prompt Endpoints ==============

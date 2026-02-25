@@ -5,6 +5,33 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 from uuid import uuid4
 
+
+from pydantic import BaseModel, Field
+from uuid import UUID
+from datetime import datetime
+
+# ================= Tag Models =================
+
+from uuid import UUID, uuid4
+
+class Tag(BaseModel):
+    id: UUID
+    name: str = Field(..., min_length=1, max_length=50)
+    created_by: str
+    created_at: datetime
+    updated_at: datetime
+
+class TagCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=50)
+    created_by: str
+
+class PromptTag(BaseModel):
+    id: UUID
+    prompt_id: str
+    tag_id: UUID
+    created_at: datetime
+
+
 def generate_id() -> str:
     """Generate a unique identifier using UUID4.
 
@@ -229,3 +256,9 @@ class HealthResponse(BaseModel):
     """
     status: str
     version: str
+
+class AssignTagRequest(BaseModel):
+    tag_id: str
+
+class UpdateTagRequest(BaseModel):
+    new_name: str
