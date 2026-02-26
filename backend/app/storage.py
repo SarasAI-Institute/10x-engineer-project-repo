@@ -1,17 +1,16 @@
 """In-memory storage for PromptLab"""
 
-from typing import Dict, List, Optional
-from app.models import Prompt, Collection, Tag, PromptTag
+from typing import Optional
+from app.models import Prompt, Collection, Tag, PromptTag, get_current_time
 from uuid import uuid4, UUID
-from datetime import datetime
 
 
 class Storage:
     def __init__(self):
-        self._prompts: Dict[str, Prompt] = {}
-        self._collections: Dict[str, Collection] = {}
-        self.tags: Dict[UUID, Tag] = {}
-        self.prompt_tags: Dict[UUID, PromptTag] = {}
+        self._prompts: dict[str, Prompt] = {}
+        self._collections: dict[str, Collection] = {}
+        self._tags: dict[UUID, Tag] = {}
+        self._prompt_tags: dict[UUID, PromptTag] = {}
 
     # ================= TAG OPERATIONS =================
 
@@ -34,14 +33,14 @@ class Storage:
             id=tag_id,
             name=name,
             created_by=created_by,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=get_current_time(),
+            updated_at=get_current_time(),
         )
-        self.tags[tag_id] = tag
+        self._tags[tag_id] = tag
         return tag
 
-    def get_tags(self) -> List[Tag]:
-        return list(self.tags.values())
+    def get_tags(self) -> list[Tag]:
+        return list(self._tags.values())
 
     def update_tag_name(self, tag_id: UUID, new_name: str) -> Tag:
         """Update the name of an existing tag identified by `tag_id`.
@@ -60,16 +59,27 @@ class Storage:
             >>> storage.update_tag_name(UUID('...'), "New Tag Name")
             Tag(id=UUID('...'), name='New Tag Name', created_by='user1', created_at=datetime(...), updated_at=datetime(...))
         """
-        if tag_id not in self.tags:
+        if tag_id not in self._tags:
             raise ValueError("Tag not found")
 
-        if any(t.name.lower() == new_name.lower() for t in self.tags.values()):
+        if any(t.name.lower() == new_name.lower() for t in self._tags.values()):
             raise ValueError("Duplicate tag name")
 
-        tag = self.tags[tag_id]
+        tag = self._tags[tag_id]
         tag.name = new_name
-        tag.updated_at = datetime.utcnow()
+        tag.updated_at = get_current_time()
         return tag
+
+    def _validate_tag_assignment(self, prompt_id: str, tag_id: UUID) -> None:
+        if prompt_id not in self._prompts:
+            raise ValueError("Prompt not found")
+        if tag_id not in self._tags:
+            raise ValueError("Tag not found")
+        if any(
+            pt.prompt_id == prompt_id and pt.tag_id == tag_id
+            for pt in self._prompt_tags.values()
+        ):
+            raise ValueError("Tag already assigned to prompt")
 
     def assign_tag_to_prompt(self, prompt_id: str, tag_id: UUID) -> PromptTag:
         """Assign a tag to a prompt using their IDs.
@@ -88,30 +98,20 @@ class Storage:
             >>> storage.assign_tag_to_prompt("prompt1", UUID('...'))
             PromptTag(id=UUID('...'), prompt_id='prompt1', tag_id=UUID('...'), created_at=datetime(...))
         """
-        if prompt_id not in self._prompts:
-            raise ValueError("Prompt not found")
+        self._validate_tag_assignment(prompt_id, tag_id)
 
-        if tag_id not in self.tags:
-            raise ValueError("Tag not found")
-
-        if any(
-            pt.prompt_id == prompt_id and pt.tag_id == tag_id
-            for pt in self.prompt_tags.values()
-        ):
-            raise ValueError("Tag already assigned to prompt")
-
-        pt_id = uuid4()
+        prompt_tag_id = uuid4()
         prompt_tag = PromptTag(
-            id=pt_id,
+            id=prompt_tag_id,
             prompt_id=prompt_id,
             tag_id=tag_id,
-            created_at=datetime.utcnow(),
+            created_at=get_current_time(),
         )
 
-        self.prompt_tags[pt_id] = prompt_tag
+        self._prompt_tags[prompt_tag_id] = prompt_tag
         return prompt_tag
 
-    def remove_tag_from_prompt(self, prompt_id: str, tag_id: UUID):
+    def remove_tag_from_prompt(self, prompt_id: str, tag_id: UUID) -> PromptTag:
         """Remove a tag from a specific prompt by their IDs.
 
         Args:
@@ -129,11 +129,10 @@ class Storage:
             PromptTag(id=UUID('...'), prompt_id='prompt1', tag_id=UUID('...'), created_at=datetime(...))
         """
         # Iterate over the dictionary items to find the matching prompt and tag IDs
-        for pt_id, pt in list(self.prompt_tags.items()):
-            if pt.prompt_id == prompt_id and pt.tag_id == tag_id:
-                # Remove the prompt-tag association and return it
-                del self.prompt_tags[pt_id]
-                return pt
+        for prompt_tag_id, prompt_tag in list(self._prompt_tags.items()):
+            if prompt_tag.prompt_id == prompt_id and prompt_tag.tag_id == tag_id:
+                del self._prompt_tags[prompt_tag_id]
+                return prompt_tag
 
         # Raise an error if the tag is not found for the given prompt
         raise ValueError("Tag not assigned to prompt")
@@ -171,11 +170,11 @@ class Storage:
         # Return the prompt associated with the given prompt_id
         return self._prompts.get(prompt_id)
 
-    def get_all_prompts(self) -> List[Prompt]:
+    def get_all_prompts(self) -> list[Prompt]:
         """Retrieve all prompts stored in the system.
 
         Returns:
-            List[Prompt]: A list of all prompt objects currently stored.
+            list[Prompt]: A list of all prompt objects currently stored.
 
         Example usage:
             >>> storage.get_all_prompts()
@@ -252,11 +251,11 @@ class Storage:
         """
         return self._collections.get(collection_id)
 
-    def get_all_collections(self) -> List[Collection]:
+    def get_all_collections(self) -> list[Collection]:
         """Retrieve all collections stored in the system.
 
         Returns:
-            List[Collection]: A list of all collection objects currently stored.
+            list[Collection]: A list of all collection objects currently stored.
 
         Example usage:
             >>> storage.get_all_collections()
@@ -297,17 +296,17 @@ class Storage:
         """
         self._prompts.clear()
         self._collections.clear()
-        self.tags.clear()
-        self.prompt_tags.clear()
+        self._tags.clear()
+        self._prompt_tags.clear()
 
-    def get_prompts_by_collection(self, collection_id: str) -> List[Prompt]:
+    def get_prompts_by_collection(self, collection_id: str) -> list[Prompt]:
         """Retrieve all prompts associated with a specific collection ID.
 
         Args:
             collection_id (str): The ID of the collection to filter prompts.
 
         Returns:
-            List[Prompt]: A list of prompts associated with the specified collection ID.
+            list[Prompt]: A list of prompts associated with the specified collection ID.
 
         Example usage:
             >>> storage.get_prompts_by_collection('collection1')

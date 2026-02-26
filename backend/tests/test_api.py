@@ -104,7 +104,6 @@ def test_update_prompt(client: TestClient, sample_prompt_data: dict[str, str]):
         "collection_id": created_data.get("collection_id")
     }
 
-    import time
     time.sleep(0.1)  # ensure timestamp changes
 
     response = client.put(f"/prompts/{prompt_id}", json=updated_data)
@@ -119,8 +118,6 @@ def test_update_prompt(client: TestClient, sample_prompt_data: dict[str, str]):
 
 
 def test_sorting_order(client: TestClient):
-    import time
-
     # Create two prompts sequentially and with a delay
     prompt1 = {"title": "First", "content": "First prompt content"}
     prompt2 = {"title": "Second", "content": "Second prompt content"}

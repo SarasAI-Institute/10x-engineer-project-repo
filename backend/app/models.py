@@ -1,18 +1,11 @@
 """Pydantic models for PromptLab"""
 
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 from pydantic import BaseModel, Field
-from uuid import uuid4
-
-
-from pydantic import BaseModel, Field
-from uuid import UUID
-from datetime import datetime
+from uuid import UUID, uuid4
 
 # ================= Tag Models =================
-
-from uuid import UUID, uuid4
 
 class Tag(BaseModel):
     """Model representing a tag used for categorization in the system.
@@ -262,7 +255,7 @@ class PromptList(BaseModel):
     """Model for a list of Prompts.
 
     Attributes:
-        prompts (List[Prompt]): List containing multiple Prompt objects.
+        prompts (list[Prompt]): List containing multiple Prompt objects.
         total (int): Total number of prompts.
 
     Example:
@@ -271,7 +264,7 @@ class PromptList(BaseModel):
             total=2
         )
     """
-    prompts: List[Prompt]
+    prompts: list[Prompt]
     total: int
 
 
@@ -279,7 +272,7 @@ class CollectionList(BaseModel):
     """Model for a list of Collections.
 
     Attributes:
-        collections (List[Collection]): List containing multiple Collection objects.
+        collections (list[Collection]): List containing multiple Collection objects.
         total (int): Total number of collections.
 
     Example:
@@ -288,7 +281,7 @@ class CollectionList(BaseModel):
             total=2
         )
     """
-    collections: List[Collection]
+    collections: list[Collection]
     total: int
 
 

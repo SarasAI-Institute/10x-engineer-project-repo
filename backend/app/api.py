@@ -3,15 +3,12 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
-from fastapi import APIRouter, HTTPException
-from app.models import TagCreate, Tag
-from app.models import AssignTagRequest, UpdateTagRequest
 from uuid import UUID
-
 from app.models import (
     Prompt, PromptCreate, PromptUpdate,
     Collection, CollectionCreate,
     PromptList, CollectionList, HealthResponse,
+    TagCreate, Tag, PromptTag, AssignTagRequest, UpdateTagRequest,
     get_current_time
 )
 from app.storage import storage
@@ -37,13 +34,31 @@ app.add_middleware(
 
 
 
-router = APIRouter()
+# ============== Helpers ==============
+
+def _get_prompt_or_404(prompt_id: str) -> Prompt:
+    prompt = storage.get_prompt(prompt_id)
+    if prompt is None:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+    return prompt
+
+
+def _get_collection_or_404(collection_id: str) -> Collection:
+    collection = storage.get_collection(collection_id)
+    if not collection:
+        raise HTTPException(status_code=404, detail="Collection not found")
+    return collection
+
+
+def _validate_collection(collection_id: str) -> None:
+    if not storage.get_collection(collection_id):
+        raise HTTPException(status_code=400, detail="Collection not found")
 
 
 # ============== Tag Endpoints ==============
 
 @app.post("/tags", response_model=Tag)
-def create_tag(tag: TagCreate):
+def create_tag(tag: TagCreate) -> Tag:
     """Create a new tag.
 
     Args:
@@ -58,21 +73,21 @@ def create_tag(tag: TagCreate):
     Example usage:
         >>> create_tag(TagCreate(name="New Tag", created_by="user1"))
     """
-    if any(t.name.lower() == tag.name.lower() for t in storage.get_tags()):
+    if any(existing_tag.name.lower() == tag.name.lower() for existing_tag in storage.get_tags()):
         raise HTTPException(status_code=400, detail="Duplicate tag name")
 
     return storage.create_tag(tag.name, tag.created_by)
 
 
 @app.get("/tags", response_model=list[Tag])
-def get_tags():
+def get_tags() -> list[Tag]:
     return storage.get_tags()
 
 
 
 
 @app.post("/prompts/{prompt_id}/tags")
-def assign_tag(prompt_id: str, request: AssignTagRequest):
+def assign_tag(prompt_id: str, request: AssignTagRequest) -> PromptTag:
     """Assign a tag to a specific prompt.
     Args:
         prompt_id (str): The ID of the prompt to which the tag will be assigned.
@@ -97,7 +112,7 @@ def assign_tag(prompt_id: str, request: AssignTagRequest):
 
 
 @app.put("/tags/{tag_id}")
-def update_tag(tag_id: str, request: UpdateTagRequest):
+def update_tag(tag_id: str, request: UpdateTagRequest) -> Tag:
     """Update the name of an existing tag.
     Args:
         tag_id (str): The ID of the tag to be updated.
@@ -122,7 +137,7 @@ def update_tag(tag_id: str, request: UpdateTagRequest):
 
 
 @app.delete("/prompts/{prompt_id}/tags/{tag_id}")
-def remove_tag(prompt_id: str, tag_id: str):
+def remove_tag(prompt_id: str, tag_id: str) -> PromptTag:
     """Remove a tag from a specific prompt.
     Args:
         prompt_id (str): The ID of the prompt from which the tag is to be removed.
@@ -138,7 +153,6 @@ def remove_tag(prompt_id: str, tag_id: str):
         >>> remove_tag("prompt1", "tag1")
     """
     try:
-        from uuid import UUID
         return storage.remove_tag_from_prompt(prompt_id, UUID(tag_id))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -147,7 +161,7 @@ def remove_tag(prompt_id: str, tag_id: str):
 # ============== Health Check ==============
 
 @app.get("/health", response_model=HealthResponse)
-def health_check():
+def health_check() -> HealthResponse:
     """Check the health status of the API.
 
     Returns:
@@ -169,7 +183,7 @@ def health_check():
 def list_prompts(
     collection_id: Optional[str] = None,
     search: Optional[str] = None
-):
+) -> PromptList:
     """List all prompts, optionally filtered by collection and search query.
 
     Args:
@@ -201,7 +215,7 @@ def list_prompts(
 
 
 @app.get("/prompts/{prompt_id}", response_model=Prompt)
-def get_prompt(prompt_id: str):
+def get_prompt(prompt_id: str) -> Prompt:
     """Retrieve a specific prompt by its ID.
 
     Args:
@@ -217,16 +231,11 @@ def get_prompt(prompt_id: str):
         >>> get_prompt("prompt1")
         Prompt(id="prompt1", title="Example", ...)
     """
-    prompt = storage.get_prompt(prompt_id)
-
-    if prompt is None:
-        raise HTTPException(status_code=404, detail="Prompt not found")
-    
-    return prompt
+    return _get_prompt_or_404(prompt_id)
 
 
 @app.post("/prompts", response_model=Prompt, status_code=201)
-def create_prompt(prompt_data: PromptCreate):
+def create_prompt(prompt_data: PromptCreate) -> Prompt:
     """Create a new prompt.
 
     Args:
@@ -242,18 +251,15 @@ def create_prompt(prompt_data: PromptCreate):
         >>> create_prompt(PromptCreate(title="New Prompt", ...))
         Prompt(id="new_id", title="New Prompt", ...)
     """
-    # Validate collection exists if provided
     if prompt_data.collection_id:
-        collection = storage.get_collection(prompt_data.collection_id)
-        if not collection:
-            raise HTTPException(status_code=400, detail="Collection not found")
-    
+        _validate_collection(prompt_data.collection_id)
+
     prompt = Prompt(**prompt_data.model_dump())
     return storage.create_prompt(prompt)
 
 
 @app.put("/prompts/{prompt_id}", response_model=Prompt)
-def update_prompt(prompt_id: str, prompt_data: PromptUpdate):
+def update_prompt(prompt_id: str, prompt_data: PromptUpdate) -> Prompt:
     """Update an existing prompt by its ID.
 
     Args:
@@ -270,15 +276,10 @@ def update_prompt(prompt_id: str, prompt_data: PromptUpdate):
         >>> update_prompt("prompt1", PromptUpdate(title="Updated Title", ...))
         Prompt(id="prompt1", title="Updated Title", ...)
     """
-    existing = storage.get_prompt(prompt_id)
-    if not existing:
-        raise HTTPException(status_code=404, detail="Prompt not found")
-    
-    # Validate collection if provided
+    existing = _get_prompt_or_404(prompt_id)
+
     if prompt_data.collection_id:
-        collection = storage.get_collection(prompt_data.collection_id)
-        if not collection:
-            raise HTTPException(status_code=400, detail="Collection not found")
+        _validate_collection(prompt_data.collection_id)
     
     # Update the updated_at timestamp with the current time
     updated_prompt = Prompt(
@@ -295,7 +296,7 @@ def update_prompt(prompt_id: str, prompt_data: PromptUpdate):
 
 
 @app.patch("/prompts/{prompt_id}", response_model=Prompt)
-def patch_prompt(prompt_id: str, prompt_data: PromptUpdate):
+def patch_prompt(prompt_id: str, prompt_data: PromptUpdate) -> Prompt:
     """Partially update a prompt by its ID.
 
     Args:
@@ -312,19 +313,17 @@ def patch_prompt(prompt_id: str, prompt_data: PromptUpdate):
         >>> patch_prompt("prompt1", PromptUpdate(title="New Title"))
         Prompt(id="prompt1", title="New Title", ...)
     """
-    existing = storage.get_prompt(prompt_id)
-    if not existing:
-        raise HTTPException(status_code=404, detail="Prompt not found")
+    existing = _get_prompt_or_404(prompt_id)
 
     # Partial update - only update fields that are provided
-    updates = {**existing.model_dump(), **prompt_data.model_dump(exclude_unset=True)}
-    updated_prompt = Prompt(**updates, updated_at=get_current_time())
+    merged_fields = {**existing.model_dump(), **prompt_data.model_dump(exclude_unset=True)}
+    updated_prompt = Prompt(**merged_fields, updated_at=get_current_time())
 
     return storage.update_prompt(prompt_id, updated_prompt)
 
 
 @app.delete("/prompts/{prompt_id}", status_code=204)
-def delete_prompt(prompt_id: str):
+def delete_prompt(prompt_id: str) -> None:
     """Delete a prompt by its ID.
 
     Args:
@@ -339,15 +338,15 @@ def delete_prompt(prompt_id: str):
     Example usage:
         >>> delete_prompt("prompt1")
     """
-    if not storage.delete_prompt(prompt_id):
-        raise HTTPException(status_code=404, detail="Prompt not found")
+    _get_prompt_or_404(prompt_id)
+    storage.delete_prompt(prompt_id)
     return None
 
 
 # ============== Collection Endpoints ==============
 
 @app.get("/collections", response_model=CollectionList)
-def list_collections():
+def list_collections() -> CollectionList:
     """List all collections.
 
     Returns:
@@ -362,7 +361,7 @@ def list_collections():
 
 
 @app.get("/collections/{collection_id}", response_model=Collection)
-def get_collection(collection_id: str):
+def get_collection(collection_id: str) -> Collection:
     """Retrieve a specific collection by its ID.
 
     Args:
@@ -378,14 +377,12 @@ def get_collection(collection_id: str):
         >>> get_collection("collection1")
         Collection(id="collection1", name="Example Collection", ...)
     """
-    collection = storage.get_collection(collection_id)
-    if not collection:
-        raise HTTPException(status_code=404, detail="Collection not found")
-    return collection
+    return _get_collection_or_404(collection_id)
+
 
 
 @app.post("/collections", response_model=Collection, status_code=201)
-def create_collection(collection_data: CollectionCreate):
+def create_collection(collection_data: CollectionCreate) -> Collection:
     """Create a new collection.
 
     Args:
@@ -403,7 +400,7 @@ def create_collection(collection_data: CollectionCreate):
 
 
 @app.delete("/collections/{collection_id}", status_code=204)
-def delete_collection(collection_id: str):
+def delete_collection(collection_id: str) -> None:
     """Delete a collection and orphan its prompts.
 
     Args:
@@ -418,11 +415,8 @@ def delete_collection(collection_id: str):
     Example usage:
         >>> delete_collection("collection1")
     """
-    # Check if collection exists
-    collection = storage.get_collection(collection_id)
-    if not collection:
-        raise HTTPException(status_code=404, detail="Collection not found")
-    
+    _get_collection_or_404(collection_id)
+
     # Get all prompts in this collection
     all_prompts = storage.get_all_prompts()
     prompts_in_collection = [p for p in all_prompts if p.collection_id == collection_id]

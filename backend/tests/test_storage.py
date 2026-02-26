@@ -1,9 +1,6 @@
-from typing import Collection
-
 import pytest
 from app.storage import Storage
-from app.models import Prompt
-from app.models import Collection
+from app.models import Prompt, Collection
 
 
 def test_create_prompt():
@@ -163,11 +160,6 @@ def test_create_collection():
     assert storage._collections[duplicate_collection.id] == duplicate_collection
 
 
-
-    import pytest
-from app.storage import Storage
-from app.models import Collection
-
 def test_get_collection():
     # Arrange
     storage = Storage()
@@ -197,11 +189,6 @@ def test_get_collection():
     assert whitespace_id is None
 
 
-
-    import pytest
-from app.storage import Storage
-from app.models import Collection
-
 def test_get_all_collections():
     # Arrange
     storage = Storage()
@@ -228,12 +215,6 @@ def test_get_all_collections():
     assert collection1 in all_collections
     assert collection2 in all_collections
 
-
-
-
-    import pytest
-from app.storage import Storage
-from app.models import Prompt, Collection
 
 def test_get_prompts_by_collection():
     # Arrange
