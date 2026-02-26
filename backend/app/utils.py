@@ -1,5 +1,6 @@
 """Utility functions for PromptLab"""
 
+import re
 from typing import List
 from app.models import Prompt
 
@@ -77,10 +78,9 @@ def validate_prompt_content(content: str) -> bool:
 
 def extract_variables(content: str) -> List[str]:
     """Extract template variables from prompt content.
-    
+
     Variables are in the format {{variable_name}}
     """
-    import re
     pattern = r'\{\{(\w+)\}\}'
     return re.findall(pattern, content)
 
