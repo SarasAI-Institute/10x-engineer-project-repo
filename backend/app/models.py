@@ -1,12 +1,18 @@
 """Pydantic models for PromptLab"""
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional, List
-from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
+from uuid import uuid4
 
+
+from pydantic import BaseModel, Field
+from uuid import UUID
+from datetime import datetime
 
 # ================= Tag Models =================
+
+from uuid import UUID, uuid4
 
 class Tag(BaseModel):
     """Model representing a tag used for categorization in the system.
@@ -104,7 +110,7 @@ def get_current_time() -> datetime:
     Example usage:
         current_time = get_current_time()
     """
-    return datetime.now(timezone.utc)
+    return datetime.utcnow()
 
 
 # ============== Prompt Models ==============

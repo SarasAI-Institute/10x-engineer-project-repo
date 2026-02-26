@@ -1,16 +1,17 @@
 """FastAPI routes for PromptLab"""
 
-from typing import Optional
-from uuid import UUID
-
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional
+from fastapi import APIRouter, HTTPException
+from app.models import TagCreate, Tag
+from app.models import AssignTagRequest, UpdateTagRequest
+from uuid import UUID
 
 from app.models import (
     Prompt, PromptCreate, PromptUpdate,
     Collection, CollectionCreate,
     PromptList, CollectionList, HealthResponse,
-    Tag, TagCreate, AssignTagRequest, UpdateTagRequest,
     get_current_time
 )
 from app.storage import storage
@@ -33,6 +34,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+
+
+router = APIRouter()
 
 
 # ============== Tag Endpoints ==============
@@ -133,6 +138,7 @@ def remove_tag(prompt_id: str, tag_id: str):
         >>> remove_tag("prompt1", "tag1")
     """
     try:
+        from uuid import UUID
         return storage.remove_tag_from_prompt(prompt_id, UUID(tag_id))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -187,6 +193,8 @@ def list_prompts(
     if search:
         prompts = search_prompts(prompts, search)
     
+    # Sort by date (newest first)
+    # Note: There might be an issue with the sorting...
     prompts = sort_prompts_by_date(prompts, descending=True)
     
     return PromptList(prompts=prompts, total=len(prompts))
