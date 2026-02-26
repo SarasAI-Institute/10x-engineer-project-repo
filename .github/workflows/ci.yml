@@ -1,45 +1,47 @@
-name: Python application
+name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: ["**"]
   pull_request:
-    branches:
-      - main
+    branches: ["**"]
 
 jobs:
-
-  build-and-test:
+  lint-and-test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.11
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8
 
+      - name: Run linter (flake8)
+        run: |
+          flake8 . --count --max-line-length=120 --exclude=__pycache__,.git \
+            --statistics --show-source
 
+      - name: Run tests with coverage
+        run: |
+          pytest --cov=app --cov-report=term-missing --cov-fail-under=80
 
-    - name: Run linter
-      run: |
-        pip install flake8
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-
-    - name: Run tests with coverage
-      run: |
-        pip install pytest pytest-cov
-        pytest --cov=.  # Adjust the directory if necessary to point to your source code
-
-    - name: Build Docker image
-      run: |
-        docker build -t fastapi-app .
-
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: backend/.coverage
