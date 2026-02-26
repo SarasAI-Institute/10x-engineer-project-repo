@@ -1,50 +1,63 @@
 """Utility functions for PromptLab"""
 
-from typing import List
 from app.models import Prompt
 
 
-def sort_prompts_by_date(prompts: List[Prompt], descending: bool = True) -> List[Prompt]:
-    """Sort prompts by creation date.
-    
-    Note: There might be a bug here. Check the sort order!
+def sort_prompts_by_date(prompts: list[Prompt], descending: bool = True) -> list[Prompt]:
+    """Sort the list of prompts by their creation date.
+
+    Args:
+        prompts (list[Prompt]): The list of Prompt objects to be sorted.
+        descending (bool): If True, sort the prompts in descending order. Defaults to True.
+
+    Returns:
+        list[Prompt]: The sorted list of prompts.
+
+    Example:
+        >>> sorted_prompts = sort_prompts_by_date(prompts, descending=False)
+        >>> for prompt in sorted_prompts:
+        ...     print(prompt.title)
     """
-    # BUG #3: This sorts ascending (oldest first) when it should sort descending (newest first)
-    # The 'descending' parameter is ignored!
-    return sorted(prompts, key=lambda p: p.created_at)
+    return sorted(prompts, key=lambda prompt: prompt.created_at, reverse=descending)
 
 
-def filter_prompts_by_collection(prompts: List[Prompt], collection_id: str) -> List[Prompt]:
-    return [p for p in prompts if p.collection_id == collection_id]
+def filter_prompts_by_collection(prompts: list[Prompt], collection_id: str) -> list[Prompt]:
+    """Filter prompts by their collection ID.
+
+    Args:
+        prompts (list[Prompt]): The list of Prompt objects to filter.
+        collection_id (str): The collection ID to filter prompts by.
+
+    Returns:
+        list[Prompt]: A list of prompts that belong to the specified collection.
+
+    Example:
+        >>> filtered_prompts = filter_prompts_by_collection(prompts, "12345")
+        >>> for prompt in filtered_prompts:
+        ...     print(prompt.title)
+    """
+    return [prompt for prompt in prompts if prompt.collection_id == collection_id]
 
 
-def search_prompts(prompts: List[Prompt], query: str) -> List[Prompt]:
-    query_lower = query.lower()
+def search_prompts(prompts: list[Prompt], query: str) -> list[Prompt]:
+    """Search for prompts containing the query in their title or description.
+
+    Args:
+        prompts (list[Prompt]): The list of Prompt objects to search within.
+        query (str): The search string to look for in the prompt titles and descriptions.
+    Returns:
+        list[Prompt]: A list of prompts where the query is found in the title or description.
+
+    Example:
+        >>> search_results = search_prompts(prompts, "welcome")
+        >>> for prompt in search_results:
+        ...     print(prompt.title)
+    """
+    normalized_query = query.lower()
     return [
-        p for p in prompts 
-        if query_lower in p.title.lower() or 
-           (p.description and query_lower in p.description.lower())
+        prompt for prompt in prompts
+        if normalized_query in prompt.title.lower() or
+           (prompt.description and normalized_query in prompt.description.lower())
     ]
 
 
-def validate_prompt_content(content: str) -> bool:
-    """Check if prompt content is valid.
-    
-    A valid prompt should:
-    - Not be empty
-    - Not be just whitespace
-    - Be at least 10 characters
-    """
-    if not content or not content.strip():
-        return False
-    return len(content.strip()) >= 10
-
-
-def extract_variables(content: str) -> List[str]:
-    """Extract template variables from prompt content.
-    
-    Variables are in the format {{variable_name}}
-    """
-    import re
-    pattern = r'\{\{(\w+)\}\}'
-    return re.findall(pattern, content)
