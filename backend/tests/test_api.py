@@ -106,6 +106,28 @@ class TestPrompts:
         # NOTE: This assertion will fail due to Bug #2!
         # The updated_at should be different from original
         # assert data["updated_at"] != original_updated_at  # Uncomment after fix
+
+    def test_patch_prompt_partial_update(self, client: TestClient, sample_prompt_data):
+        # Create a prompt first
+        create_response = client.post("/prompts", json=sample_prompt_data)
+        prompt_id = create_response.json()["id"]
+        original_updated_at = create_response.json()["updated_at"]
+
+        # Partial update: only change the title
+        patch_data = {"title": "Partially Updated Title"}
+
+        import time
+        time.sleep(0.1)
+
+        response = client.patch(f"/prompts/{prompt_id}", json=patch_data)
+        assert response.status_code == 200
+        data = response.json()
+        # Title should be updated
+        assert data["title"] == "Partially Updated Title"
+        # Content should remain unchanged
+        assert data["content"] == sample_prompt_data["content"]
+        # updated_at should have changed
+        assert data["updated_at"] != original_updated_at
     
     def test_sorting_order(self, client: TestClient):
         """Test that prompts are sorted newest first.
@@ -170,10 +192,8 @@ class TestCollections:
         # Delete collection
         client.delete(f"/collections/{collection_id}")
         
-        # The prompt still exists but has invalid collection_id
-        # This is Bug #4 - should be handled properly
+        # After deletion, prompts that previously belonged to the collection should
+        # remain but have `collection_id` set to None (we nullify references).
         prompts = client.get("/prompts").json()["prompts"]
         if prompts:
-            # Prompt exists with orphaned collection_id
-            assert prompts[0]["collection_id"] == collection_id
-            # After fix, collection_id should be None or prompt should be deleted
+            assert prompts[0]["collection_id"] is None
