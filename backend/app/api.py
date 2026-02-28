@@ -90,6 +90,9 @@ def list_prompts(
     
     # Filter by collection if specified
     if collection_id:
+        collection = storage.get_collection(collection_id)
+        if not collection:
+            raise HTTPException(status_code=400, detail="Collection not found")
         prompts = filter_prompts_by_collection(prompts, collection_id)
     
     # Search if query provided
@@ -125,7 +128,7 @@ def get_prompt(prompt_id: str):
     """
     # Retrieve the prompt using the provided ID
     prompt = storage.get_prompt(prompt_id)
-    
+
     # Check if the prompt exists; if not, raise a 404 error
     if not prompt:
         raise HTTPException(status_code=404, detail="Prompt not found")
