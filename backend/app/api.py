@@ -63,15 +63,13 @@ def list_prompts(
 
 
 @app.get("/prompts/{prompt_id}", response_model=Prompt)
+
 def get_prompt(prompt_id: str):
-    # BUG #1: This will raise a 500 error if prompt doesn't exist
-    # because we're accessing .id on None
-    # Should return 404 instead!
     prompt = storage.get_prompt(prompt_id)
-    
-    # This line causes the bug - accessing attribute on None
-    if prompt.id:
-        return prompt
+    if not prompt:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+    return prompt
+
 
 
 @app.post("/prompts", response_model=Prompt, status_code=201)
@@ -87,30 +85,27 @@ def create_prompt(prompt_data: PromptCreate):
 
 
 @app.put("/prompts/{prompt_id}", response_model=Prompt)
+
 def update_prompt(prompt_id: str, prompt_data: PromptUpdate):
     existing = storage.get_prompt(prompt_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Prompt not found")
     
-    # Validate collection if provided
-    if prompt_data.collection_id:
+    # Validate collection if provided (allow clearing the relationship)
+    if prompt_data.collection_id is not None:
         collection = storage.get_collection(prompt_data.collection_id)
         if not collection:
             raise HTTPException(status_code=400, detail="Collection not found")
     
-    # BUG #2: We're not updating the updated_at timestamp!
-    # The updated prompt keeps the old timestamp
-    updated_prompt = Prompt(
-        id=existing.id,
-        title=prompt_data.title,
-        content=prompt_data.content,
-        description=prompt_data.description,
-        collection_id=prompt_data.collection_id,
-        created_at=existing.created_at,
-        updated_at=existing.updated_at  # BUG: Should be get_current_time()
-    )
+    # Merge payloads so we don't overwrite existing values with None
+    prompt_payload = existing.model_dump()
+    prompt_payload.update(prompt_data.model_dump(exclude_none=True))
+    prompt_payload["updated_at"] = get_current_time()
+
+    updated_prompt = Prompt(**prompt_payload)
     
     return storage.update_prompt(prompt_id, updated_prompt)
+
 
 
 # NOTE: PATCH endpoint is missing! Students need to implement this.
