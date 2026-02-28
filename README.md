@@ -1,5 +1,49 @@
 # PromptLab
 
+PromptLab is a small Prompt Engineering platform used as a 4-week engineering
+assignment. This repository contains a FastAPI backend (core), placeholder
+frontend scaffolding, tests, and specs. The backend exposes CRUD endpoints for
+Prompts and Collections and is intentionally small to teach debugging,
+documentation, and testing workflows.
+
+## Quick start (backend)
+
+Requirements: Python 3.11
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python -m uvicorn app.api:app --reload --host 127.0.0.1 --port 8000
+```
+
+Open the API docs at http://127.0.0.1:8000/docs
+
+## Project layout
+
+- `backend/` - FastAPI app, models, storage, tests
+- `frontend/` - placeholder for the React frontend (Week 4)
+- `docs/` - API reference and documentation
+- `specs/` - feature specifications
+
+## Running tests
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+pytest tests/ -v
+```
+
+## Development notes
+
+- The backend currently uses an in-memory `Storage` class. Data is not
+  persisted between restarts.
+- Week 1 bugs have been fixed (404 on missing prompt, PUT updated_at, sorting,
+  collection deletion handling) and a PATCH endpoint is implemented.
+
+For full contributor and grading details, see `PROJECT_BRIEF.md` and
+`GRADING_RUBRIC.md`.
+# PromptLab
+
 **Your AI Prompt Engineering Platform**
 
 ---
