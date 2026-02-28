@@ -56,7 +56,7 @@ class PromptBase(BaseModel):
         prompt = PromptBase(title="Sample Title", content="This is a sample prompt.")
     """
 
-    title: str = Field(..., min_length=1, max_length=200)
+    title: str = Field(None, min_length=1, max_length=200)
     content: str = Field(..., min_length=1)
     description: Optional[str] = Field(None, max_length=500)
     collection_id: Optional[str] = None
@@ -87,7 +87,34 @@ class PromptUpdate(PromptBase):
     Usage Example:
         updated_prompt = PromptUpdate(title="Updated Title", content="Updated content of the prompt.")
     """
+    title: Optional[str] = Field(None, min_length=1, max_length=200)
+    content: Optional[str] = Field(None, min_length=1)
+    description: Optional[str] = Field(None, max_length=500)
+    collection_id: Optional[str] = None
     pass
+
+class PromptPatch(BaseModel):
+    """Model for partially updating a Prompt.
+
+    This model allows partial updates to a Prompt by making all fields
+    optional. Each field has its respective constraints in terms of length.
+
+    Attributes:
+        title: Optional; The title of the prompt.
+        content: Optional; The content of the prompt.
+        description: Optional; Description of the prompt.
+        collection_id: Optional; The ID of the associated collection.
+
+    Example:
+        >>> prompt_patch = PromptPatch(
+        ...     title="Updated Title",
+        ...     content="Updated content for the prompt."
+        ... )
+    """
+    title: Optional[str] = None
+    content: Optional[str] = None
+    description: Optional[str] = None
+    collection_id: Optional[str] = None
 
 
 class Prompt(PromptBase):
@@ -197,3 +224,7 @@ class HealthResponse(BaseModel):
     status: str
     version: str
 
+
+class VersionRequest(BaseModel):
+    updated_content: str
+    changes_summary: str

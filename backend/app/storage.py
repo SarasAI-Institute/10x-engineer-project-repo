@@ -29,6 +29,8 @@ class Storage:
         """
         self._prompts: Dict[str, Prompt] = {}
         self._collections: Dict[str, Collection] = {}
+        self._prompt_versions: Dict[str, List[Dict[str, str]]] = {}
+
     
     # ============== Prompt Operations ==============
     
@@ -275,6 +277,94 @@ class Storage:
         self._prompts.clear()
         self._collections.clear()
 
+    def get_prompt_by_title(self, title: str, collection_id: str) -> Optional[Prompt]:
+        """Retrieve a prompt by its title.
+
+        This method searches for a prompt with the given title in the
+        internal prompt storage and returns it if found. If a prompt
+        with the specified title does not exist, it returns None.
+
+        Args:
+            title (str): The title of the prompt to retrieve.
+
+        Returns:
+            Optional[Prompt]: The Prompt object if found, otherwise None.
+
+        Usage example:
+            storage = Storage()
+            prompt = storage.get_prompt_by_title("Example Title")
+            if prompt:
+                print("Prompt found:", prompt.text)
+            else:
+                print("Prompt not found.")
+        """
+        for prompt in self._prompts.values():
+            if prompt.collection_id == collection_id and prompt.title == title:
+                return prompt
+        return None
+
+    def collection_exists_by_name(self, name: str) -> bool:
+        """Check if a collection exists by its name.
+
+        This method searches through all stored collections to determine whether
+        a collection with the specified name exists.
+
+        Args:
+            name (str): The name of the collection to check.
+
+        Returns:
+            bool: True if a collection with the specified name exists, otherwise False.
+
+        Usage example:
+            storage = Storage()
+            exists = storage.collection_exists_by_name("Example Collection")
+            if exists:
+                print("Collection with that name already exists.")
+            else:
+                print("No collection with that name found.")
+        """
+        return any(collection.name == name for collection in self._collections.values())
+
+
+    def get_prompt_by_id_and_collection(self, prompt_id: str, collection_id: str) -> Optional[Prompt]:
+        """Retrieve a prompt by its ID that belongs to a specific collection.
+
+        This method checks if a prompt with the specified ID and belongs to the given
+        collection ID exists and returns it if found.
+
+        Args:
+            prompt_id (str): The unique identifier of the prompt to retrieve.
+            collection_id (str): The collection ID associated with the prompt.
+
+        Returns:
+            Optional[Prompt]: The prompt object if it exists in the collection, otherwise None.
+        """
+        prompt = self.get_prompt(prompt_id)
+        if prompt and prompt.collection_id == collection_id:
+            return prompt
+
+    def get_versions_by_prompt(self, prompt_id: str) -> List[Dict[str, str]]:
+        """Retrieve all versions for a specific prompt ID.
+
+        Args:
+            prompt_id (str): The unique identifier of the prompt to retrieve versions for.
+
+        Returns:
+            List[Dict[str, str]]: A list of version data dictionaries for the given prompt ID.
+        """
+        return self._prompt_versions.get(prompt_id, [])
+    
+    def save_prompt_version(self, prompt_id: str, version_data: Dict[str, str]) -> None:
+        """Save a version of a prompt.
+
+        Args:
+            prompt_id (str): The ID of the prompt for which the version is being saved.
+            version_data (Dict[str, str]): The version details to be stored.
+        """
+        if prompt_id not in self._prompt_versions:
+            self._prompt_versions[prompt_id] = []
+        
+        self._prompt_versions[prompt_id].append(version_data)
 
 # Global storage instance
 storage = Storage()
