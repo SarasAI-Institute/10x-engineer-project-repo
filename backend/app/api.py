@@ -442,13 +442,45 @@ def delete_collection(collection_id: str):
         storage.delete_prompt(prompt.id)
     return None
 
-# Assume 'storage' is your storage instance and has methods to interact with the database
-
-
-
 @app.post("/collections/{collection_id}/prompts/{prompt_id}/version", response_model=Dict[str, str], status_code=201)
-def create_prompt_version(collection_id: str, prompt_id: str, version_data: VersionRequest):
-    """Create a new version of a prompt with updated content and change summary."""
+def create_prompt_version(collection_id: str, prompt_id: str, version_data: VersionRequest) -> Dict[str, str]:
+    """Create a new version of a prompt with updated content and change summary.
+
+    This endpoint allows creating a new version of an existing prompt within a specific collection.
+    It checks for actual changes in the prompt content before proceeding to save a new version.
+    Each version is assigned a unique version ID and a sequential version number.
+
+    Args:
+        collection_id (str): The ID of the collection containing the prompt.
+        prompt_id (str): The ID of the prompt to be versioned.
+        version_data (VersionRequest): Contains the updated content and a summary of changes for the prompt.
+
+    Returns:
+        Dict[str, str]: A dictionary containing the details of the newly created prompt version including
+                        the version ID, prompt ID, collection ID, version number, and creation timestamp.
+
+    Raises:
+        HTTPException: If the collection or prompt is not found, or if there is no change in content.
+
+    Example:
+        To create a new version of a prompt:
+
+            version_data = VersionRequest(
+                updated_content="Updated prompt content...",
+                changes_summary="Fixed typos and improved clarity."
+            )
+            new_version = create_prompt_version("collection123", "prompt456", version_data)
+            print(new_version)
+            # Output might look like:
+            # {
+            #     "version_id": "123e4567-e89b-12d3-a456-426614174000",
+            #     "prompt_id": "prompt456",
+            #     "collection_id": "collection123",
+            #     "version_number": "3",
+            #     "created_at": "2024-01-01T00:00:00Z"
+            # }
+    """
+
     # Retrieve the collection and prompt
     collection = storage.get_collection(collection_id)
     if not collection:
@@ -491,7 +523,27 @@ def create_prompt_version(collection_id: str, prompt_id: str, version_data: Vers
 
 @app.get("/collections/{collection_id}/prompts/{prompt_id}/versions", response_model=List[Dict[str, str]])
 async def get_prompt_versions(collection_id: str, prompt_id: str) -> List[Dict[str, str]]:
-    """Retrieve all versions of a given prompt."""
+    """Retrieve all versions of a given prompt.
+
+    This endpoint fetches all the versions associated with a specific prompt
+    belonging to a particular collection. It requires valid collection and prompt
+    identifiers. If no prompt is found, a 404 HTTPException is raised.
+
+    Args:
+        collection_id: The unique identifier of the collection.
+        prompt_id: The unique identifier of the prompt.
+
+    Returns:
+        A list of dictionaries, where each dictionary contains details about a
+        version of the prompt.
+
+    Raises:
+        HTTPException: If the prompt is not found, a 404 status code is returned.
+
+    Example:
+        >>> await get_prompt_versions("collection123", "prompt456")
+        [{"version": "v1", "changes": "Initial version"}, {"version": "v2", "changes": "Updated intro"}]
+    """
     prompt = storage.get_prompt_by_id_and_collection(prompt_id, collection_id)
     if not prompt:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Prompt not found")
@@ -503,7 +555,42 @@ async def get_prompt_versions(collection_id: str, prompt_id: str) -> List[Dict[s
 
 @app.post("/collections/{collection_id}/prompts/{prompt_id}/revert", response_model=Dict[str, str])
 def revert_to_prompt_version(collection_id: str, prompt_id: str, version_request: Dict[str, str]):
-    """Reverts a prompt to a specific previous version, given the version ID."""
+    """
+    Reverts a prompt to a specific previous version, given the version ID.
+
+    This endpoint allows users to revert a specified prompt within a collection
+    to one of its previous versions using the `target_version_id`. It ensures
+    that reversion is only executed if there are actual differences in content
+    between the current prompt and the target version.
+
+    Args:
+        collection_id: The ID of the collection containing the prompt.
+        prompt_id: The ID of the prompt to revert.
+        version_request: A dictionary containing `target_version_id` which
+                         specifies the version to revert to.
+
+    Returns:
+        A dictionary with details of the newly created version reflecting the
+        reversion if successful. If the target version is the same as the
+        current version, a message indicating no changes were made.
+
+    Raises:
+        HTTPException: If `target_version_id` is missing in the request, or if
+                       the specified collection, prompt, or version does not
+                       exist.
+
+    Usage Example:
+        >>> version_request = {"target_version_id": "abc123def456"}
+        >>> result = revert_to_prompt_version("coll1", "prompt1", version_request)
+        >>> print(result)
+        {
+            "version_id": "new-version-id",
+            "prompt_id": "prompt1",
+            "collection_id": "coll1",
+            "version_number": 5,
+            "created_at": "2024-01-01T12:00:00Z"
+        }
+    """
     # Validate the request input for 'target_version_id'.
     target_version_id = version_request.get("target_version_id")
     if not target_version_id:
@@ -553,17 +640,52 @@ def revert_to_prompt_version(collection_id: str, prompt_id: str, version_request
 
     return {"detail": "Target version is the current version; no changes made."}
 
+# ============== Version Diff Endpoint ==============
 
+@app.get("/collections/{collection_id}/prompts/{prompt_id}/versions/diff", response_model=Dict[str, List[str]])
+def get_version_diff(
+    collection_id: str,
+    prompt_id: str,
+    first_version_id: str,
+    second_version_id: str
+) -> Dict[str, List[str]]:
+    """
+Retrieve differences between two versions of a given prompt.
 
+This endpoint compares the specified versions of a prompt and identifies
+any differences in their contents. It returns a list of these differences,
+or an empty list if there are no changes.
 
-@app.post("/collections/{collection_id}/prompts/{prompt_id}/revert", response_model=Dict[str, str])
-def revert_to_prompt_version(collection_id: str, prompt_id: str, version_request: Dict[str, str]):
-    """Reverts a prompt to a specific previous version, given the version ID."""
-    # Validate the request input for 'target_version_id'.
-    target_version_id = version_request.get("target_version_id")
-    if not target_version_id:
-        raise HTTPException(status_code=422, detail="Missing version ID")
+Args:
+    collection_id (str): The ID of the collection to which the prompt belongs.
+    prompt_id (str): The ID of the prompt for which version differences are requested.
+    first_version_id (str): The ID of the first version to compare.
+    second_version_id (str): The ID of the second version to compare.
 
+Returns:
+    Dict[str, List[str]]: A dictionary with a single key "differences", containing
+    a list of strings that describe the differences between the versions.
+
+Raises:
+    HTTPException: If the collection, prompt, or any of the specified versions
+    are not found, a 404 error is raised.
+
+Example:
+    To compare two versions of a prompt and retrieve the differences, make a GET
+    request to the following endpoint:
+
+    GET /collections/{collection_id}/prompts/{prompt_id}/versions/diff?first_version_id={first_version_id}&second_version_id={second_version_id}
+
+    If the content of the two specified versions differs, the response might look like:
+    {
+        "differences": ["Content modified"]
+    }
+
+    If there are no differences, the response will be:
+    {
+        "differences": []
+    }
+"""
     # Retrieve the collection and ensure it exists
     collection = storage.get_collection(collection_id)
     if not collection:
@@ -574,40 +696,20 @@ def revert_to_prompt_version(collection_id: str, prompt_id: str, version_request
     if not prompt:
         raise HTTPException(status_code=404, detail="Prompt not found")
 
-    # Retrieve the target version
-    target_version = next((version for version in storage.get_versions_by_prompt(prompt_id) 
-                           if version["version_id"] == target_version_id), None)
-    if not target_version:
+    # Retrieve both versions
+    first_version = next((version for version in storage.get_versions_by_prompt(prompt_id) 
+                          if version["version_id"] == first_version_id), None)
+    second_version = next((version for version in storage.get_versions_by_prompt(prompt_id) 
+                           if version["version_id"] == second_version_id), None)
+
+    if not first_version or not second_version:
         raise HTTPException(status_code=404, detail="Version not found")
 
-    # Ensure reversion only if there's an actual difference
-    if prompt.content.strip() != target_version["content"].strip():
-        # Update the prompt to the target version's content
-        prompt.content = target_version["content"]
+    # Compute differences (simplified example; actual implementation might use a diff library)
+    differences = []
+    if first_version["content"] != second_version["content"]:
+        differences.append("Content modified")
 
-        # Create a new version entry post-reversion
-        version_id = str(uuid.uuid4())
-        version_number = len(storage.get_versions_by_prompt(prompt_id)) + 1
-        storage.save_prompt_version(prompt_id, {
-            "version_id": version_id,
-            "prompt_id": prompt_id,
-            "collection_id": collection_id,
-            "version_number": version_number,
-            "created_at": datetime.utcnow().isoformat(),
-            "content": prompt.content,
-            "changes_summary": f"Reverted to version {target_version['version_id']}"
-        })
-
-        return {
-            "version_id": version_id,
-            "prompt_id": prompt_id,
-            "collection_id": collection_id,
-            "version_number": version_number,
-            "created_at": datetime.utcnow().isoformat()
-        }
-    else:
-        return HTTPException(status_code=200, detail="Target version is the current version; no changes made.")
-
-
-
+    # Return differences; no changes return empty list
+    return {"differences": differences}
 

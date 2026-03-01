@@ -201,7 +201,7 @@
 - **TASK-007-01**: Conduct user testing for UI/UX improvements.
 - **TASK-007-02**: Revamp UI components for intuitive access to versioning features within collections.
 
-## User Story 5: Data Model Changes for Versioning
+## Task 8: Data Model Changes for Versioning
 
 **Task ID:** TASK-008  
 **Related User Story:** US-005
