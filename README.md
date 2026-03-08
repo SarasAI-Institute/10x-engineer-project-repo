@@ -1,167 +1,263 @@
-# PromptLab
+# Incident Management API
 
-**Your AI Prompt Engineering Platform**
+## Project Overview
 
----
+This project is a FastAPI-based application designed for managing incidents. It provides a robust backend for handling prompts and collections, allowing for effective tracking and categorization of various incidents within a given system.
 
-## Welcome to the Team! 👋
+## Setup Instructions
 
-Congratulations on joining the PromptLab engineering team! You've been brought on to help us build the next generation of prompt engineering tools.
+To set up the project locally, follow these steps:
 
-### What is PromptLab?
+Here is a clarified and structured version, step-by-step:
 
-PromptLab is an internal tool for AI engineers to **store, organize, and manage their prompts**. Think of it as a "Postman for Prompts" — a professional workspace where teams can:
+## Step-by-Step Setup
 
-- 📝 Store prompt templates with variables (`{{input}}`, `{{context}}`)
-- 📁 Organize prompts into collections
-- 🏷️ Tag and search prompts
-- 📜 Track version history
-- 🧪 Test prompts with sample inputs
+1. **Clone the Repository**
+   - Use the command:
+     ```bash
+     git clone <repository-url>
+     ```
+   - Replace `<repository-url>` with the actual URL of the repository.
 
-### The Current Situation
+2. **Navigate to the Project Directory**
+   - Move into the directory:
+     ```bash
+     cd repository-directory
+     ```
+   - Replace `repository-directory` with the name of your project folder.
 
-The previous developer left us with a *partially working* backend. The core structure is there, but:
+3. **Create and Activate a Virtual Environment** (recommended)
+   - To create a virtual environment:
+     ```bash
+     python -m venv env
+     ```
+   - Activate the virtual environment:
+     - On macOS and Linux:
+       ```bash
+       source env/bin/activate
+       ```
+     - On Windows:
+       ```bash
+       env\\Scripts\\activate
+       ```
 
-- There are **several bugs** that need fixing
-- Some **features are incomplete**
-- The **documentation is minimal** (you'll fix that)
-- There are **no tests** worth mentioning
-- **No CI/CD pipeline** exists
-- **No frontend** has been built yet
+4. **Install Dependencies**
+   - Install the necessary packages:
+     ```bash
+     pip install -r requirements.txt
+     ```
 
-Your job over the next 4 weeks is to transform this into a **production-ready, full-stack application**.
+5. **Run the Application**
+   - Start the application using:
+     ```bash
+     uvicorn backend.main:app --reload
+     ```
+   - Access the application at `http://127.0.0.1:8000`.
 
----
+## API Endpoints
 
-## Quick Start
+### Health Check
+- **GET** `/health`
+  - **Description**: Checks if the API is running and healthy.
+  - **Response**: Returns a JSON status and version.
 
-### Prerequisites
+### Prompt Endpoints
+- **GET** `/prompts`
+  - **Parameters**:
+    - `collection_id` (optional)
+    - `search` (optional)
+  - **Response**: A list of prompts matching the filters.
 
-- Python 3.10+
-- Node.js 18+ (for Week 4)
-- Git
+- **GET** `/prompts/{prompt_id}`
+  - **Response**: Details for a specific prompt by ID.
 
-### Run Locally
+- **POST** `/prompts`
+  - **Body**: JSON with `title`, `content`, `description`, `collection_id`.
+  - **Response**: Newly created prompt object.
 
-```bash
-# Clone the repo
-git clone <your-repo-url>
-cd promptlab
+- **PUT** `/prompts/{prompt_id}`
+  - **Body**: Fields to be updated for a prompt.
+  - **Response**: Updated prompt.
 
-# Set up backend
-cd backend
-pip install -r requirements.txt
-python main.py
-```
+- **PATCH** `/prompts/{prompt_id}`
+  - **Description**: Partially update a prompt.
 
-API runs at: http://localhost:8000
+- **DELETE** `/prompts/{prompt_id}`
+  - **Description**: Deletes a specified prompt.
 
-API docs at: http://localhost:8000/docs
+### Collection Endpoints
+- **GET** `/collections`
+  - **Response**: Lists all collections.
 
-### Run Tests
+- **GET** `/collections/{collection_id}`
+  - **Response**: Details of a collection by ID.
 
-```bash
-cd backend
-pytest tests/ -v
-```
+- **POST** `/collections`
+  - **Body**: JSON for new collection details.
+  - **Response**: Created collection object.
 
----
+- **DELETE** `/collections/{collection_id}`
+  - **Description**: Deletes a collection and orphans its prompts.
 
-## Project Structure
 
-```
-promptlab/
-├── README.md                    # You are here
-├── PROJECT_BRIEF.md             # Your assignment details
-├── GRADING_RUBRIC.md            # How you'll be graded
-│
-├── backend/
-│   ├── app/
-│   │   ├── __init__.py
-│   │   ├── api.py              # FastAPI routes (has bugs!)
-│   │   ├── models.py           # Pydantic models
-│   │   ├── storage.py          # In-memory storage
-│   │   └── utils.py            # Helper functions
-│   ├── tests/
-│   │   ├── __init__.py
-│   │   ├── test_api.py         # Basic tests
-│   │   └── conftest.py         # Test fixtures
-│   ├── main.py                 # Entry point
-│   └── requirements.txt
-│
-├── frontend/                    # You'll create this in Week 4
-├── specs/                       # You'll create this in Week 2
-├── docs/                        # You'll create this in Week 2
-└── .github/                     # You'll set up CI/CD in Week 3
-```
+  To ensure comprehensive coverage of models and API endpoints, let's list all potential examples and ensure they are documented. Here's a possible extended view, including all found details:
 
----
+## Extended API Endpoints
 
-## Your Mission
+### Health Check
 
-### 🧪 Experimentation Encouraged!
-While we provide guidelines, **you are the engineer**. If you see a better way to solve a problem using AI, do it!
-- Want to swap the storage layer for a real database? **Go for it.**
-- Want to add Authentication? **Do it.**
-- Want to rewrite the API in a different style? **As long as tests pass, you're clear.**
+- **GET** `/health`
+  - **Description**: Check the service health.
+  - **Response**: JSON indicating service status and version.
 
-The goal is to learn how to build *better* software *faster* with AI. Don't be afraid to break things and rebuild them better.
+### Prompt Endpoints
 
-### Week 1: Fix the Backend
-- Understand this codebase using AI
-- Find and fix the bugs
-- Implement missing features
+- **GET** `/prompts`
+  - **Query Parameters**:
+    - **collection_id** (Optional): Filter prompts by specific collection.
+    - **search** (Optional): Search query for filtering prompts by title/description.
+  - **Response**: List of prompts filtered or all prompts if no query is provided.
 
-### Week 2: Document Everything
-- Write proper documentation
-- Create feature specifications
-- Set up coding standards
+- **GET** `/prompts/{prompt_id}`
+  - **Path Parameter**: `prompt_id`
+  - **Response**: Detailed prompt object by ID.
 
-### Week 3: Make it Production-Ready
-- Write comprehensive tests
-- Implement new features with TDD
-- Set up CI/CD and Docker
+- **POST** `/prompts`
+  - **Body Example**:
+    ```json
+    {
+      "title": "Incident Analysis",
+      "content": "Analyze and document incident details.",
+      "description": "Documentation for incident analysis",
+      "collection_id": "analysis-collection-id"
+    }
+    ```
+  - **Response**: Object of the created prompt.
 
-### Week 4: Build the Frontend
-- Create a React frontend
-- Connect it to the backend
-- Polish the user experience
+- **PUT** `/prompts/{prompt_id}`
+  - **Body Example**:
+    ```json
+    {
+      "title": "Updated Incident Title"
+    }
+    ```
+  - **Response**: Updated prompt object with new details.
 
----
+- **PATCH** `/prompts/{prompt_id}`
 
-## API Endpoints (Current)
+- **DELETE** `/prompts/{prompt_id}`
+  - **Description**: Deletes the prompt and returns no content on success.
 
-| Method | Endpoint | Description | Status |
-|--------|----------|-------------|--------|
-| GET | `/health` | Health check | ✅ Works |
-| GET | `/prompts` | List all prompts | ⚠️ Has issues |
-| GET | `/prompts/{id}` | Get single prompt | ❌ Bug |
-| POST | `/prompts` | Create prompt | ✅ Works |
-| PUT | `/prompts/{id}` | Update prompt | ⚠️ Has issues |
-| DELETE | `/prompts/{id}` | Delete prompt | ✅ Works |
-| GET | `/collections` | List collections | ✅ Works |
-| GET | `/collections/{id}` | Get collection | ✅ Works |
-| POST | `/collections` | Create collection | ✅ Works |
-| DELETE | `/collections/{id}` | Delete collection | ❌ Bug |
+### Collection Endpoints
 
----
+- **GET** `/collections`
+  - **Response**: Get all collections data.
 
-## Tech Stack
+- **GET** `/collections/{collection_id}`
+  - **Response**: Collection details by its ID.
 
-- **Backend**: Python 3.10+, FastAPI, Pydantic
-- **Frontend**: React, Vite (Week 4)
-- **Testing**: pytest
-- **DevOps**: Docker, GitHub Actions (Week 3)
+- **POST** `/collections`
+  - **Body Example**:
+    ```json
+    {
+      "name": "New Collection",
+      "description": "Collection for incident categorizations"
+    }
+    ```
+  - **Response**: Newly created collection object.
 
----
+- **DELETE** `/collections/{collection_id}`
+  - **Description**: Deletes identified collection and updates corresponding prompts.
 
-## Need Help?
+## Extended Data Models
 
-1. **Use AI tools** — This is an AI-assisted coding course!
-2. Read the `PROJECT_BRIEF.md` for detailed instructions
-3. Check `GRADING_RUBRIC.md` to understand expectations
-4. Ask questions in the course forum
+### Prompt Models
 
----
+- **PromptBase**
+  ```json
+  {
+    "title": "Incident Title",
+    "content": "Detailed content of the prompt.",
+    "description": "Optional description",
+    "collection_id": "optional-collection-id"
+  }
+  ```
 
-Good luck, and welcome to the team! 🚀
+- **PromptCreate**: Same fields as `PromptBase`.
+
+- **PromptUpdate**
+  ```json
+  {
+    "title": "Optional new title",
+    "content": "Optional new content",
+    "description": "Optional new description",
+    "collection_id": "Optional new collection ID"
+  }
+  ```
+
+- **Prompt**: Includes all `PromptBase` fields plus metadata like `id`, `created_at`, and `updated_at`.
+
+- **PromptList**: Represents a paginated list or filtered list of prompts.
+
+### Collection Models
+
+- **CollectionBase**
+  ```json
+  {
+    "name": "Collection Name",
+    "description": "Brief description"
+  }
+  ```
+
+- **CollectionCreate**: Same fields as `CollectionBase`.
+
+- **Collection**: Includes all `CollectionBase` fields plus metadata like `id`, `created_at`.
+
+- **CollectionList**: Represents a list of collections to enable pagination.
+
+### Response Models
+
+- **HealthResponse**
+  ```json
+  {
+    "status": "healthy",
+    "version": "1.0.0"
+  }
+  ```
+
+## Data Models
+
+### Prompt Models
+- **PromptBase**: Contains `title`, `content`, and optional `collection_id`.
+- **PromptCreate**: Extends `PromptBase` for new prompts.
+- **PromptUpdate**: Optional fields for prompt updates.
+- **Prompt**: Complete prompt data model.
+- **PromptList**: Wrapper for a list of prompts.
+
+### Collection Models
+- **CollectionBase**: Common fields for collections.
+- **CollectionCreate**: Used when creating collections.
+- **Collection**: Full collection data model.
+- **CollectionList**: Wrapper for a list of collections.
+
+### Response Models
+- **HealthResponse**: Represents the health check results.
+
+## Usage Examples
+
+### Adding a New Prompt
+- Send a POST request to `/prompts` with JSON like:
+  ```json
+  {
+    "title": "New Incident",
+    "content": "Incident details...",
+    "description": "Brief description",
+    "collection_id": "example-collection-id"
+  }
+  ```
+
+### Fetching a Collection
+- Use the endpoint `/collections/{collection_id}` to get specific collection data.
+
+I ensured each section is thoroughly detailed to ensure clarity for users setting up and using your API. If more information needs to be included or if specific details should be adjusted, please let me know!
+
