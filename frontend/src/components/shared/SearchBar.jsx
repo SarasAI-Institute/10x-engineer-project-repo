@@ -1,3 +1,26 @@
+/**
+ * Controlled search input component with a leading search icon.
+ *
+ * Renders a text input preceded by an SVG magnifying-glass icon. The component
+ * is fully controlled: the parent manages the current value and receives change
+ * notifications via the `onChange` callback which receives the raw string value
+ * (not a synthetic event).
+ *
+ * @param {Object} props - Component props.
+ * @param {string} props.value - The current search input value (controlled).
+ * @param {function(value: string): void} props.onChange - Called with the new string value on each keystroke.
+ * @param {string} [props.placeholder='Search...'] - Placeholder text for the input.
+ * @returns {JSX.Element} A relative-positioned wrapper containing an icon and text input.
+ *
+ * @example
+ * const [query, setQuery] = useState('');
+ *
+ * <SearchBar
+ *   value={query}
+ *   onChange={setQuery}
+ *   placeholder="Search prompts…"
+ * />
+ */
 export function SearchBar({ value, onChange, placeholder = 'Search...' }) {
   return (
     <div className="relative">

@@ -2,6 +2,28 @@ import { useEffect, useRef } from 'react';
 
 const FOCUSABLE = 'button:not([disabled]):not([tabindex="-1"]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])';
 
+/**
+ * Accessible modal dialog component with focus management and keyboard support.
+ *
+ * When opened, the modal:
+ * - Focuses the first focusable element inside the panel.
+ * - Traps keyboard focus within the panel (Tab / Shift+Tab cycle).
+ * - Closes when the user presses Escape or clicks the backdrop.
+ *
+ * Renders nothing when `isOpen` is false.
+ *
+ * @param {Object} props - Component props.
+ * @param {boolean} props.isOpen - Controls visibility of the modal.
+ * @param {function(): void} props.onClose - Callback invoked when the modal should close.
+ * @param {string} props.title - Title displayed in the modal header (also used for aria-labelledby).
+ * @param {React.ReactNode} props.children - Content rendered inside the modal body.
+ * @returns {JSX.Element|null} The modal overlay and panel, or null when closed.
+ *
+ * @example
+ * <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Edit Prompt">
+ *   <p>Modal content goes here.</p>
+ * </Modal>
+ */
 export function Modal({ isOpen, onClose, title, children }) {
   const panelRef = useRef(null);
 
@@ -16,6 +38,14 @@ export function Modal({ isOpen, onClose, title, children }) {
   const onCloseRef = useRef(onClose);
   useEffect(() => { onCloseRef.current = onClose; });
 
+  /**
+   * Handles keydown events for Escape (close) and Tab (focus trap) while the
+   * modal is open. Attached to `document` so it intercepts events regardless
+   * of which element currently has focus.
+   *
+   * @param {KeyboardEvent} e - The native keyboard event.
+   * @returns {void}
+   */
   useEffect(() => {
     if (!isOpen) return;
     const onKey = (e) => {

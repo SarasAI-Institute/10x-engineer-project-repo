@@ -3,6 +3,32 @@ import { Modal } from '../shared/Modal';
 import { Button } from '../shared/Button';
 import { createCollection } from '../../api/collections';
 
+/**
+ * Modal form component for creating a new collection.
+ *
+ * Manages its own form state including name, description, validation touch
+ * tracking, loading state, and server-side error messages. On successful
+ * submission the form resets and calls `onCreated` with the new collection
+ * object. On cancel or close the form resets without saving.
+ *
+ * @param {Object} props - Component props.
+ * @param {boolean} props.isOpen - Controls whether the modal is visible.
+ * @param {function(): void} props.onClose - Callback invoked when the modal should close
+ *   (Cancel button or modal backdrop/Escape).
+ * @param {function(collection: Object): void} props.onCreated - Callback invoked with the
+ *   newly created collection object after a successful API call.
+ * @returns {JSX.Element} A `Modal` wrapping the collection creation form.
+ *
+ * @example
+ * <CollectionForm
+ *   isOpen={showForm}
+ *   onClose={() => setShowForm(false)}
+ *   onCreated={(col) => {
+ *     setCollections((prev) => [...prev, col]);
+ *     setShowForm(false);
+ *   }}
+ * />
+ */
 export function CollectionForm({ isOpen, onClose, onCreated }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -12,11 +38,34 @@ export function CollectionForm({ isOpen, onClose, onCreated }) {
 
   const nameError = touched && !name.trim() ? 'Name is required' : '';
 
+  /**
+   * Resets all form fields and validation state, then calls `onClose`.
+   *
+   * @returns {void}
+   *
+   * @example
+   * // Called by Cancel button and modal close events
+   * handleClose();
+   */
   const handleClose = () => {
     setName(''); setDescription(''); setTouched(false); setError('');
     onClose();
   };
 
+  /**
+   * Handles form submission: validates, calls the API, and notifies the parent.
+   *
+   * Prevents default form submission, marks fields as touched for validation
+   * display, and short-circuits if the name is blank. On success resets the
+   * form and invokes `onCreated`. On failure sets the `error` state.
+   *
+   * @param {import('react').SyntheticEvent<HTMLFormElement>} e - The form submit event.
+   * @returns {Promise<void>}
+   *
+   * @example
+   * // Wired to the form's onSubmit prop
+   * <form onSubmit={handleSubmit}>...</form>
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setTouched(true);

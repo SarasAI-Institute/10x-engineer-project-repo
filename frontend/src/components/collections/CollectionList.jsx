@@ -1,6 +1,35 @@
 import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { ErrorMessage } from '../shared/ErrorMessage';
 
+/**
+ * Renders the list of collections in the sidebar navigation.
+ *
+ * Handles three loading/data states before rendering the list:
+ * 1. **Loading** — shows a centred `LoadingSpinner`.
+ * 2. **Error** — shows an `ErrorMessage`.
+ * 3. **Empty** — shows a "No collections yet." placeholder message.
+ *
+ * Each collection row contains a selection button and an optional delete
+ * button that appears on hover via CSS group-hover.
+ *
+ * @param {Object} props - Component props.
+ * @param {Array<{id: string, name: string, description?: string}>} props.collections - Collections to display.
+ * @param {boolean} [props.loading] - When true, renders a loading spinner instead of the list.
+ * @param {string} [props.error] - Error message string; when truthy renders an `ErrorMessage`.
+ * @param {string|null} props.selectedId - ID of the currently selected collection; highlighted if matched.
+ * @param {function(id: string): void} props.onSelect - Called when the user clicks a collection row.
+ * @param {function(id: string): void} [props.onDelete] - Called when the user clicks the delete icon.
+ *   When omitted the delete button is not rendered.
+ * @returns {JSX.Element} A loading spinner, error message, empty state, or a `<ul>` of collection rows.
+ *
+ * @example
+ * <CollectionList
+ *   collections={collections}
+ *   selectedId={selectedCollection}
+ *   onSelect={setSelectedCollection}
+ *   onDelete={handleDeleteCollection}
+ * />
+ */
 export function CollectionList({ collections, loading, error, selectedId, onSelect, onDelete }) {
   if (loading) {
     return (

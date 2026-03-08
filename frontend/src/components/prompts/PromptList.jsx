@@ -2,7 +2,54 @@ import { PromptCard } from './PromptCard';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { ErrorMessage } from '../shared/ErrorMessage';
 
+/**
+ * Renders the main grid of prompt cards with loading, error, and empty states.
+ *
+ * State priority:
+ * 1. **Loading** — shows a large centred `LoadingSpinner`.
+ * 2. **Error** — shows an `ErrorMessage` with a retry button.
+ * 3. **Empty (filtered)** — "No results found" message when search/collection
+ *    filters are active but produced no results.
+ * 4. **Empty (unfiltered)** — "No prompts yet" onboarding message.
+ * 5. **Populated** — a responsive CSS grid of `PromptCard` components.
+ *
+ * @param {Object} props - Component props.
+ * @param {Array<Object>} props.prompts - Array of prompt objects to render.
+ * @param {Array<{id: string, name: string}>} props.collections - Full collections list,
+ *   used to resolve collection names for each card badge.
+ * @param {boolean} props.loading - When true renders the loading spinner.
+ * @param {string} [props.error] - Error message string; when truthy renders an error state.
+ * @param {function(): void} props.onRetry - Callback passed to `ErrorMessage` for the retry button.
+ * @param {function(prompt: Object): void} props.onView - Called when a card is clicked to open detail view.
+ * @param {function(prompt: Object): void} props.onEdit - Called when the edit icon on a card is clicked.
+ * @param {function(prompt: Object): void} props.onDelete - Called when the delete icon on a card is clicked.
+ * @param {boolean} props.isFiltered - When true and the list is empty, shows the "no results" empty
+ *   state instead of the "no prompts yet" onboarding state.
+ * @returns {JSX.Element} A loading spinner, error, empty state, or grid of prompt cards.
+ *
+ * @example
+ * <PromptList
+ *   prompts={prompts}
+ *   collections={collections}
+ *   loading={loadingPrompts}
+ *   error={promptsError}
+ *   onRetry={fetchPrompts}
+ *   onView={setViewingPrompt}
+ *   onEdit={openEdit}
+ *   onDelete={handleDeletePrompt}
+ *   isFiltered={Boolean(search || selectedCollection)}
+ * />
+ */
 export function PromptList({ prompts, collections, loading, error, onRetry, onView, onEdit, onDelete, isFiltered }) {
+  /**
+   * Looks up the name of a collection by its ID.
+   *
+   * @param {string} id - The collection ID to search for.
+   * @returns {string|undefined} The matching collection's name, or undefined if not found.
+   *
+   * @example
+   * getCollectionName('abc123'); // 'Marketing Prompts'
+   */
   const getCollectionName = (id) => collections.find((c) => c.id === id)?.name;
 
   if (loading) {

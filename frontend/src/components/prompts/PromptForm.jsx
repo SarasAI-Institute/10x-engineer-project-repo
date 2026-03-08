@@ -3,11 +3,73 @@ import { Modal } from '../shared/Modal';
 import { Button } from '../shared/Button';
 import { createPrompt, updatePrompt } from '../../api/prompts';
 
+/**
+ * Inline field-level error message component.
+ *
+ * Renders a red alert paragraph when `msg` is a non-empty string. Returns
+ * null when `msg` is falsy so it can be safely placed after every input
+ * without adding DOM nodes for valid fields.
+ *
+ * @param {Object} props - Component props.
+ * @param {string} [props.msg] - The error message to display. No element is
+ *   rendered when this is falsy.
+ * @returns {JSX.Element|null} A red `<p role="alert">` or null.
+ *
+ * @example
+ * <FieldError msg={touched.title && errors.title} />
+ */
 function FieldError({ msg }) {
   if (!msg) return null;
   return <p role="alert" className="mt-1 text-xs text-red-600">{msg}</p>;
 }
 
+/**
+ * Modal form component for creating or editing a prompt.
+ *
+ * When `initialData` is provided the form operates in edit mode (PUT request);
+ * otherwise it creates a new prompt (POST request). Form state is reset each
+ * time the modal opens (`isOpen` transitions to true).
+ *
+ * Validation rules:
+ * - Title: required, max 200 characters.
+ * - Content: required.
+ *
+ * @param {Object} props - Component props.
+ * @param {boolean} props.isOpen - Controls modal visibility.
+ * @param {function(): void} props.onClose - Called when the modal should close (Cancel or backdrop).
+ * @param {function(prompt: Object): void} props.onSaved - Called with the saved prompt object
+ *   after a successful create or update.
+ * @param {Array<{id: string, name: string}>} props.collections - Available collections for the
+ *   collection selector.
+ * @param {{
+ *   id: string,
+ *   title: string,
+ *   content: string,
+ *   description?: string,
+ *   collection_id?: string
+ * }|null} [props.initialData] - Existing prompt to edit. When null/undefined the form is in
+ *   create mode.
+ * @returns {JSX.Element} A `Modal` wrapping the prompt create/edit form.
+ *
+ * @example
+ * // Create mode
+ * <PromptForm
+ *   isOpen={showForm}
+ *   onClose={() => setShowForm(false)}
+ *   onSaved={handlePromptSaved}
+ *   collections={collections}
+ * />
+ *
+ * @example
+ * // Edit mode
+ * <PromptForm
+ *   isOpen={showForm}
+ *   onClose={() => setShowForm(false)}
+ *   onSaved={handlePromptSaved}
+ *   collections={collections}
+ *   initialData={editingPrompt}
+ * />
+ */
 export function PromptForm({ isOpen, onClose, onSaved, collections, initialData }) {
   const isEdit = Boolean(initialData);
 
@@ -29,7 +91,29 @@ export function PromptForm({ isOpen, onClose, onSaved, collections, initialData 
     }
   }, [isOpen, initialData]);
 
+  /**
+   * Returns a controlled `onChange` handler that updates a single form field.
+   *
+   * @param {string} field - The key of the form field to update.
+   * @returns {function(e: Event): void} An event handler that reads `e.target.value`
+   *   and merges it into the form state under the given field key.
+   *
+   * @example
+   * <input onChange={set('title')} />
+   */
   const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
+
+  /**
+   * Returns an `onBlur` handler that marks a single form field as touched.
+   *
+   * Touched state is used to decide whether to show inline validation errors.
+   *
+   * @param {string} field - The key of the form field to mark as touched.
+   * @returns {function(): void} A handler that sets `touched[field]` to true.
+   *
+   * @example
+   * <input onBlur={touch('title')} />
+   */
   const touch = (field) => () => setTouched((t) => ({ ...t, [field]: true }));
 
   const errors = {
@@ -38,6 +122,19 @@ export function PromptForm({ isOpen, onClose, onSaved, collections, initialData 
   };
   const isValid = !errors.title && !errors.content;
 
+  /**
+   * Handles form submission: validates fields, calls the API, and notifies the parent.
+   *
+   * Marks all validatable fields as touched so errors become visible. Short-circuits
+   * when the form is invalid. On success calls `onSaved` with the returned prompt.
+   * On failure sets the `error` banner state.
+   *
+   * @param {Event} e - The form submit event.
+   * @returns {Promise<void>}
+   *
+   * @example
+   * <form onSubmit={handleSubmit}>...</form>
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setTouched({ title: true, content: true });
@@ -62,6 +159,17 @@ export function PromptForm({ isOpen, onClose, onSaved, collections, initialData 
     }
   };
 
+  /**
+   * Computes the Tailwind class string for a form input based on its touched
+   * and error state.
+   *
+   * @param {string} field - The field key to look up in `touched` and `errors`.
+   * @returns {string} A Tailwind class string with red border/background when
+   *   the field has been touched and has a validation error.
+   *
+   * @example
+   * <input className={inputClass('title')} />
+   */
   const inputClass = (field) =>
     `w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
     ${touched[field] && errors[field] ? 'border-red-400 bg-red-50' : 'border-gray-300'}`;

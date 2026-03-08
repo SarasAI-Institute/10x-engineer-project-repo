@@ -1,4 +1,47 @@
+/**
+ * Card component displaying a summary of a single prompt.
+ *
+ * Renders a clickable card showing the prompt title, optional description,
+ * a monospace preview of the content, the collection badge, and the last
+ * updated date. Edit and delete icon buttons are overlaid in the top-right
+ * corner; their click events are stopped from bubbling to the card's
+ * `onClick` handler.
+ *
+ * @param {Object} props - Component props.
+ * @param {{
+ *   id: string,
+ *   title: string,
+ *   content: string,
+ *   description?: string,
+ *   collection_id?: string,
+ *   updated_at: string
+ * }} props.prompt - The prompt data to display.
+ * @param {string} [props.collectionName] - Human-readable name of the prompt's collection.
+ *   When falsy no collection badge is rendered.
+ * @param {function(): void} props.onClick - Called when the user clicks the card body (opens detail view).
+ * @param {function(): void} props.onEdit - Called when the user clicks the edit icon button.
+ * @param {function(): void} props.onDelete - Called when the user clicks the delete icon button.
+ * @returns {JSX.Element} A styled card element summarising the prompt.
+ *
+ * @example
+ * <PromptCard
+ *   prompt={prompt}
+ *   collectionName="Marketing"
+ *   onClick={() => setViewingPrompt(prompt)}
+ *   onEdit={() => openEdit(prompt)}
+ *   onDelete={() => handleDeletePrompt(prompt)}
+ * />
+ */
 export function PromptCard({ prompt, collectionName, onClick, onEdit, onDelete }) {
+  /**
+   * Formats an ISO date string into a short human-readable date.
+   *
+   * @param {string} iso - An ISO 8601 date string (e.g. '2024-03-08T12:00:00Z').
+   * @returns {string} Formatted date such as 'Mar 8, 2024'.
+   *
+   * @example
+   * formatDate('2024-03-08T12:00:00Z'); // 'Mar 8, 2024'
+   */
   const formatDate = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   return (

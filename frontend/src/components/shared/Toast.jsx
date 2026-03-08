@@ -14,6 +14,22 @@ const icons = {
   ),
 };
 
+/**
+ * Container component that renders a stack of toast notification items.
+ *
+ * Positioned fixed at the bottom-right of the viewport. Each toast in the
+ * `toasts` array is rendered as a `ToastItem`. Passes `onDismiss` through to
+ * each item so they can be dismissed manually or automatically.
+ *
+ * @param {Object} props - Component props.
+ * @param {Array<{id: number, message: string, type: 'success'|'error'}>} props.toasts - Active toasts to display.
+ * @param {function(id: number): void} props.onDismiss - Callback to remove a toast by ID.
+ * @returns {JSX.Element} A fixed-position container with rendered toast items.
+ *
+ * @example
+ * const { toasts, dismiss } = useToast();
+ * return <Toast toasts={toasts} onDismiss={dismiss} />;
+ */
 export function Toast({ toasts, onDismiss }) {
   return (
     <div
@@ -28,6 +44,22 @@ export function Toast({ toasts, onDismiss }) {
   );
 }
 
+/**
+ * Individual toast notification item with auto-dismiss after 4 seconds.
+ *
+ * Displays the toast message alongside a type-specific icon and a manual
+ * dismiss button. Automatically calls `onDismiss` with the toast ID after a
+ * 4000 ms timeout, clearing the timer on unmount.
+ *
+ * @param {Object} props - Component props.
+ * @param {{id: number, message: string, type: 'success'|'error'}} props.toast - Toast data to display.
+ * @param {function(id: number): void} props.onDismiss - Callback to remove this toast from the list.
+ * @returns {JSX.Element} A styled toast card with icon, message, and close button.
+ *
+ * @example
+ * // Rendered internally by Toast; not usually used directly
+ * <ToastItem toast={{ id: 1, message: 'Saved!', type: 'success' }} onDismiss={dismiss} />
+ */
 function ToastItem({ toast, onDismiss }) {
   useEffect(() => {
     const timer = setTimeout(() => onDismiss(toast.id), 4000);

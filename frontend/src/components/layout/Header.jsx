@@ -1,3 +1,18 @@
+/**
+ * Application header component with branding and a mobile navigation trigger.
+ *
+ * Renders the top navigation bar containing the PromptLab logo, app name, and
+ * a hamburger button visible only on mobile breakpoints (`lg:hidden`). The
+ * hamburger button calls `onMenuClick` to open the sidebar drawer.
+ *
+ * @param {Object} props - Component props.
+ * @param {function(): void} props.onMenuClick - Callback invoked when the mobile
+ *   hamburger menu button is clicked. Typically toggles sidebar visibility.
+ * @returns {JSX.Element} A `<header>` element with logo, title, and menu toggle.
+ *
+ * @example
+ * <Header onMenuClick={() => setSidebarOpen(true)} />
+ */
 export function Header({ onMenuClick }) {
   return (
     <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 flex items-center gap-3">

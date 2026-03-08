@@ -12,6 +12,26 @@ import { useConfirm } from './hooks/useConfirm';
 import { getPrompts, deletePrompt } from './api/prompts';
 import { getCollections, deleteCollection } from './api/collections';
 
+/**
+ * Root application component for PromptLab.
+ *
+ * Owns all top-level state (prompts, collections, UI modes) and orchestrates
+ * data fetching, CRUD operations, and modal visibility. Renders the full
+ * application shell via `Layout` and mounts the toast and confirmation dialog
+ * portals at the document root level.
+ *
+ * Key responsibilities:
+ * - Fetching and re-fetching prompts (with search/collection filters) and collections.
+ * - Handling prompt and collection deletion with confirmation dialogs.
+ * - Opening the `PromptForm` modal in create or edit mode.
+ * - Displaying success/error toasts after mutations.
+ *
+ * @returns {JSX.Element} The complete application UI.
+ *
+ * @example
+ * // Mounted once at the application entry point
+ * ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ */
 export default function App() {
   const [prompts, setPrompts] = useState([]);
   const [collections, setCollections] = useState([]);
@@ -27,6 +47,17 @@ export default function App() {
   const { toasts, toast, dismiss } = useToast();
   const { confirm, confirmState, handleResponse } = useConfirm();
 
+  /**
+   * Fetches all collections from the API and updates state.
+   *
+   * Errors are silently swallowed because collection loading is non-blocking;
+   * the sidebar degrades gracefully when collections are unavailable.
+   *
+   * @returns {Promise<void>}
+   *
+   * @example
+   * await fetchCollections();
+   */
   const fetchCollections = useCallback(async () => {
     try {
       const data = await getCollections();
@@ -36,6 +67,18 @@ export default function App() {
     }
   }, []);
 
+  /**
+   * Fetches prompts from the API, applying the current search and collection
+   * filters. Updates loading, error, and prompts state accordingly.
+   *
+   * Re-created whenever `selectedCollection` or `search` changes so the
+   * `useEffect` dependency array stays accurate.
+   *
+   * @returns {Promise<void>}
+   *
+   * @example
+   * await fetchPrompts();
+   */
   const fetchPrompts = useCallback(async () => {
     setLoadingPrompts(true);
     setPromptsError('');
@@ -55,6 +98,18 @@ export default function App() {
   useEffect(() => { fetchCollections(); }, [fetchCollections]);
   useEffect(() => { fetchPrompts(); }, [fetchPrompts]);
 
+  /**
+   * Called by `PromptForm` after a successful create or update.
+   *
+   * Closes the form modal, clears the editing state, refreshes the prompt
+   * list, and shows a success toast.
+   *
+   * @param {Object} saved - The created or updated prompt object returned by the API.
+   * @returns {void}
+   *
+   * @example
+   * <PromptForm onSaved={handlePromptSaved} ... />
+   */
   const handlePromptSaved = (saved) => {
     setShowForm(false);
     setEditingPrompt(null);
@@ -62,6 +117,19 @@ export default function App() {
     toast(editingPrompt ? `"${saved.title}" updated` : `"${saved.title}" created`);
   };
 
+  /**
+   * Asks the user to confirm, then deletes the given prompt.
+   *
+   * If the deleted prompt is currently being viewed in the detail modal,
+   * the modal is also closed. Shows a success or error toast after the
+   * operation.
+   *
+   * @param {{id: string, title: string}} prompt - The prompt to delete.
+   * @returns {Promise<void>}
+   *
+   * @example
+   * <PromptList onDelete={handleDeletePrompt} ... />
+   */
   const handleDeletePrompt = async (prompt) => {
     const ok = await confirm(`Delete "${prompt.title}"? This cannot be undone.`);
     if (!ok) return;
@@ -75,6 +143,19 @@ export default function App() {
     }
   };
 
+  /**
+   * Asks the user to confirm, then deletes the collection with the given ID.
+   *
+   * If the deleted collection is currently selected as a filter, the filter
+   * is cleared. Refreshes both collections and prompts after deletion. Shows
+   * a success or error toast.
+   *
+   * @param {string} id - The ID of the collection to delete.
+   * @returns {Promise<void>}
+   *
+   * @example
+   * <Layout onDeleteCollection={handleDeleteCollection} ... />
+   */
   const handleDeleteCollection = async (id) => {
     const col = collections.find((c) => c.id === id);
     const ok = await confirm(`Delete collection "${col?.name}"? Prompts will not be deleted.`);
@@ -90,6 +171,17 @@ export default function App() {
     }
   };
 
+  /**
+   * Opens the `PromptForm` modal pre-populated with the given prompt for editing.
+   *
+   * Also closes the detail view modal if it is currently open for the same prompt.
+   *
+   * @param {Object} prompt - The prompt to edit; passed as `initialData` to `PromptForm`.
+   * @returns {void}
+   *
+   * @example
+   * <PromptList onEdit={openEdit} ... />
+   */
   const openEdit = (prompt) => {
     setViewingPrompt(null);
     setEditingPrompt(prompt);

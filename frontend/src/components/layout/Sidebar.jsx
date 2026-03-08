@@ -2,6 +2,35 @@ import { useState } from 'react';
 import { CollectionList } from '../collections/CollectionList';
 import { CollectionForm } from '../collections/CollectionForm';
 
+/**
+ * Navigation sidebar component for browsing and managing collections.
+ *
+ * Renders a vertical panel with:
+ * - A header row with a "Collections" label and a "+" button to open the new-collection form.
+ * - An "All Prompts" button that clears the active collection filter.
+ * - A `CollectionList` showing all existing collections with select and delete actions.
+ * - A `CollectionForm` modal triggered by the "+" button.
+ *
+ * @param {Object} props - Component props.
+ * @param {Array<Object>} props.collections - Array of collection objects to display.
+ * @param {string|null} props.selectedCollection - ID of the currently active collection filter, or null.
+ * @param {function(id: string|null): void} props.onSelectCollection - Called when the user selects
+ *   a collection or "All Prompts". Receives the collection ID or null.
+ * @param {function(collection: Object): void} props.onCollectionCreated - Called after a new
+ *   collection is created; receives the created collection object.
+ * @param {function(id: string): void} props.onDeleteCollection - Called when the user requests
+ *   deletion of a collection; receives the collection ID.
+ * @returns {JSX.Element} An `<aside>` element containing the collections navigation UI.
+ *
+ * @example
+ * <Sidebar
+ *   collections={collections}
+ *   selectedCollection={selectedCollection}
+ *   onSelectCollection={setSelectedCollection}
+ *   onCollectionCreated={(col) => setCollections((prev) => [...prev, col])}
+ *   onDeleteCollection={handleDeleteCollection}
+ * />
+ */
 export function Sidebar({ collections, selectedCollection, onSelectCollection, onCollectionCreated, onDeleteCollection }) {
   const [showForm, setShowForm] = useState(false);
 

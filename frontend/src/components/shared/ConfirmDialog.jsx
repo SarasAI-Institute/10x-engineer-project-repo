@@ -1,5 +1,31 @@
 import { Button } from './Button';
 
+/**
+ * Accessible confirmation dialog component for destructive actions.
+ *
+ * Renders a fixed-position overlay with an alert dialog containing a warning
+ * icon, the pending confirmation message, and Cancel / Delete buttons.
+ * Returns null when `confirmState` is null (i.e., no pending confirmation).
+ *
+ * Designed to be paired with the `useConfirm` hook which manages `confirmState`
+ * and provides the `handleResponse` callback.
+ *
+ * @param {Object} props - Component props.
+ * @param {{message: string, resolve: function(boolean): void}|null} props.confirmState - Active
+ *   confirmation request from `useConfirm`, or null when no dialog is pending.
+ * @param {function(result: boolean): void} props.onResponse - Callback invoked with the user's
+ *   boolean choice: `true` for confirm, `false` for cancel.
+ * @returns {JSX.Element|null} The confirmation dialog overlay, or null when inactive.
+ *
+ * @example
+ * const { confirm, confirmState, handleResponse } = useConfirm();
+ *
+ * // Trigger a confirmation
+ * const ok = await confirm('Delete this item? This cannot be undone.');
+ *
+ * // Render the dialog
+ * <ConfirmDialog confirmState={confirmState} onResponse={handleResponse} />
+ */
 export function ConfirmDialog({ confirmState, onResponse }) {
   if (!confirmState) return null;
 
