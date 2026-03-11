@@ -67,6 +67,8 @@ class TestPrompts:
         response = client.get("/prompts/nonexistent-id")
         # This should be 404, but there's a bug...
         assert response.status_code == 404  # Will fail until bug is fixed
+
+        
     
     def test_delete_prompt(self, client: TestClient, sample_prompt_data):
         # Create a prompt first
@@ -82,6 +84,25 @@ class TestPrompts:
         # Note: This might fail due to Bug #1
         assert get_response.status_code in [404, 500]  # 404 after fix
     
+    def test_patch_prompt(self, client: TestClient, sample_prompt_data):
+        # Create a prompt first
+        create_response = client.post("/prompts", json=sample_prompt_data)
+        prompt_id = create_response.json()["id"]
+        original_updated_at = create_response.json()["updated_at"]
+        # Patch it
+        response = client.patch(f"/prompts/{prompt_id}", json={"title": "Patched Title"})
+        assert response.status_code == 200
+        data = response.json()
+
+        assert data["title"] == "Patched Title"
+        assert data["content"] == sample_prompt_data["content"]
+        assert data["updated_at"] != original_updated_at 
+        # Verify it's gone
+        # get_response = client.get(f"/prompts/{prompt_id}")
+        # Note: This might fail due to Bug #1
+        # assert get_response.status_code in [404, 500]  # 404 after fix
+    
+
     def test_update_prompt(self, client: TestClient, sample_prompt_data):
         # Create a prompt first
         create_response = client.post("/prompts", json=sample_prompt_data)
@@ -152,12 +173,7 @@ class TestCollections:
         assert response.status_code == 404
     
     def test_delete_collection_with_prompts(self, client: TestClient, sample_collection_data, sample_prompt_data):
-        """Test deleting a collection that has prompts.
-        
-        NOTE: Bug #4 - prompts become orphaned after collection deletion.
-        This test documents the current (buggy) behavior.
-        After fixing, update the test to verify correct behavior.
-        """
+        """Ensure deleting a collection clears the collection_id on associated prompts."""
         # Create collection
         col_response = client.post("/collections", json=sample_collection_data)
         collection_id = col_response.json()["id"]
@@ -170,10 +186,8 @@ class TestCollections:
         # Delete collection
         client.delete(f"/collections/{collection_id}")
         
-        # The prompt still exists but has invalid collection_id
-        # This is Bug #4 - should be handled properly
         prompts = client.get("/prompts").json()["prompts"]
-        if prompts:
-            # Prompt exists with orphaned collection_id
-            assert prompts[0]["collection_id"] == collection_id
-            # After fix, collection_id should be None or prompt should be deleted
+        assert len(prompts) == 1
+        prompt = prompts[0]
+        assert prompt["id"] == prompt_id
+        assert prompt["collection_id"] is None

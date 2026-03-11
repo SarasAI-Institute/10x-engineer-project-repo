@@ -1,5 +1,6 @@
 """In-memory storage for PromptLab
 
+    
 This module provides simple in-memory storage for prompts and collections.
 In a production environment, this would be replaced with a database.
 """
@@ -49,12 +50,17 @@ class Storage:
     def get_all_collections(self) -> List[Collection]:
         return list(self._collections.values())
     
+    
     def delete_collection(self, collection_id: str) -> bool:
         if collection_id in self._collections:
+            # Clear collection_id on prompts that referenced this collection
+            for prompt in self._prompts.values():
+                if prompt.collection_id == collection_id:
+                    prompt.collection_id = None
+
             del self._collections[collection_id]
             return True
         return False
-    
     def get_prompts_by_collection(self, collection_id: str) -> List[Prompt]:
         return [p for p in self._prompts.values() if p.collection_id == collection_id]
     

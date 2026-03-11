@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 
 from app.models import (
-    Prompt, PromptCreate, PromptUpdate,
+    Prompt, PromptCreate, PromptUpdate, PromptPatch,
     Collection, CollectionCreate,
     PromptList, CollectionList, HealthResponse,
     get_current_time
@@ -61,17 +61,23 @@ def list_prompts(
     
     return PromptList(prompts=prompts, total=len(prompts))
 
-
 @app.get("/prompts/{prompt_id}", response_model=Prompt)
 def get_prompt(prompt_id: str):
-    # BUG #1: This will raise a 500 error if prompt doesn't exist
-    # because we're accessing .id on None
-    # Should return 404 instead!
     prompt = storage.get_prompt(prompt_id)
+    if not prompt:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+    return prompt
+
+# @app.get("/prompts/{prompt_id}", response_model=Prompt)
+# def get_prompt(prompt_id: str):
+#     # BUG #1: This will raise a 500 error if prompt doesn't exist
+#     # because we're accessing .id on None
+#     # Should return 404 instead!
+#     prompt = storage.get_prompt(prompt_id)
     
-    # This line causes the bug - accessing attribute on None
-    if prompt.id:
-        return prompt
+#     # This line causes the bug - accessing attribute on None
+#     if prompt.id:
+#         return prompt
 
 
 @app.post("/prompts", response_model=Prompt, status_code=201)
@@ -107,14 +113,33 @@ def update_prompt(prompt_id: str, prompt_data: PromptUpdate):
         description=prompt_data.description,
         collection_id=prompt_data.collection_id,
         created_at=existing.created_at,
-        updated_at=existing.updated_at  # BUG: Should be get_current_time()
+        updated_at=get_current_time()  
+          # BUG: Should be get_current_time()
     )
     
     return storage.update_prompt(prompt_id, updated_prompt)
 
 
-# NOTE: PATCH endpoint is missing! Students need to implement this.
-# It should allow partial updates (only update provided fields)
+# PATCH endpoint allows partial updates (only provided fields are changed).
+
+@app.patch("/prompts/{prompt_id}", response_model=Prompt)
+def patch_prompt(prompt_id: str, prompt_data: PromptPatch):
+    existing = storage.get_prompt(prompt_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+
+    # Apply only provided fields (PromptPatch uses Optional fields)
+    updated_prompt = Prompt(
+        id=existing.id,
+        title=prompt_data.title if prompt_data.title is not None else existing.title,
+        content=prompt_data.content if prompt_data.content is not None else existing.content,
+        description=prompt_data.description if prompt_data.description is not None else existing.description,
+        collection_id=prompt_data.collection_id if prompt_data.collection_id is not None else existing.collection_id,
+        created_at=existing.created_at,
+        updated_at=get_current_time(),  # always bump timestamp on PATCH
+    )
+
+    return storage.update_prompt(prompt_id, updated_prompt)
 
 
 @app.delete("/prompts/{prompt_id}", status_code=204)
