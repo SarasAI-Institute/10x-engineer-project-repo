@@ -2,7 +2,6 @@
 
 Run with: python main.py
 """
-
 import uvicorn
 from app.api import app
 
