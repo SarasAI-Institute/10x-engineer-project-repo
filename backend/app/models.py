@@ -67,6 +67,13 @@ class PromptCreate(PromptBase):
 class PromptUpdate(PromptBase):
     """Model for replacing an existing prompt's mutable fields."""
 
+    change_note: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        max_length=255,
+        description="Reason for the update stored with the created version.",
+    )
+
 
 class PromptPatch(BaseModel):
     """Model for partially updating prompt attributes.
@@ -98,6 +105,12 @@ class PromptPatch(BaseModel):
         default=None,
         description="Updated collection identifier for the prompt.",
     )
+    change_note: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        max_length=255,
+        description="Reason for the change stored with the created version.",
+    )
 
 
 class Prompt(PromptBase):
@@ -120,6 +133,11 @@ class Prompt(PromptBase):
     updated_at: datetime = Field(
         default_factory=get_current_time,
         description="Timestamp of the most recent modification.",
+    )
+    current_version: int = Field(
+        default=0,
+        ge=0,
+        description="Latest saved version number for this prompt.",
     )
 
     model_config = ConfigDict(from_attributes=True)
@@ -207,6 +225,84 @@ class CollectionList(BaseModel):
     total: int = Field(
         ...,
         description="Total number of collections available across all pages.",
+    )
+
+
+# ============== Prompt Version Models ==============
+
+
+class PromptVersion(BaseModel):
+    """Immutable snapshot of a prompt prior to an update."""
+
+    id: str = Field(default_factory=generate_id, description="Unique version identifier.")
+    prompt_id: str = Field(..., description="Identifier of the prompt this version belongs to.")
+    version_number: int = Field(
+        ...,
+        ge=1,
+        description="Sequential version number scoped to a single prompt.",
+    )
+    title: str = Field(..., description="Title captured in the snapshot.")
+    content: str = Field(..., description="Content captured in the snapshot.")
+    description: Optional[str] = Field(
+        default=None,
+        description="Description captured in the snapshot.",
+    )
+    collection_id: Optional[str] = Field(
+        default=None,
+        description="Collection ID captured in the snapshot.",
+    )
+    created_at: datetime = Field(
+        default_factory=get_current_time,
+        description="Timestamp when the version was recorded.",
+    )
+    editor: str = Field(
+        default="system",
+        min_length=1,
+        max_length=100,
+        description="Identifier for who performed the change.",
+    )
+    change_note: Optional[str] = Field(
+        default=None,
+        max_length=255,
+        description="Reason provided for the change that produced this version.",
+    )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PromptVersionSummary(BaseModel):
+    """Subset of version fields returned when listing versions."""
+
+    id: str = Field(..., description="Unique version identifier.")
+    version_number: int = Field(..., description="Sequential version number.")
+    editor: str = Field(..., description="Editor associated with the change.")
+    change_note: Optional[str] = Field(
+        default=None,
+        description="Optional note supplied for the change.",
+    )
+    created_at: datetime = Field(..., description="Timestamp when the version was created.")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PromptVersionList(BaseModel):
+    """Response for listing versions of a prompt."""
+
+    prompt_id: str = Field(..., description="Prompt identifier for the listed versions.")
+    versions: List[PromptVersionSummary] = Field(
+        ..., description="Versions available for the prompt, newest first."
+    )
+    total: int = Field(..., description="Total number of versions returned.")
+
+
+class PromptVersionRestoreRequest(BaseModel):
+    """Payload accepted when restoring a prompt version."""
+
+    change_note: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        max_length=255,
+        description="Reason recorded for restoring to a previous version.",
     )
 
 

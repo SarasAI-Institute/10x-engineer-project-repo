@@ -6,7 +6,7 @@ In a production environment, this would be replaced with a database.
 """
 
 from typing import Dict, List, Optional
-from app.models import Prompt, Collection
+from app.models import Prompt, PromptVersion, Collection
 
 
 class Storage:
@@ -17,6 +17,7 @@ class Storage:
 
         self._prompts: Dict[str, Prompt] = {}
         self._collections: Dict[str, Collection] = {}
+        self._prompt_versions: Dict[str, List[PromptVersion]] = {}
     
     # ============== Prompt Operations ==============
     
@@ -82,6 +83,7 @@ class Storage:
 
         if prompt_id in self._prompts:
             del self._prompts[prompt_id]
+            self._prompt_versions.pop(prompt_id, None)
             return True
         return False
     
@@ -154,13 +156,45 @@ class Storage:
 
         return [p for p in self._prompts.values() if p.collection_id == collection_id]
     
+    # ============== Version Operations ==============
+
+    def create_prompt_version(self, version: PromptVersion) -> PromptVersion:
+        """Persist a snapshot of a prompt before it was modified."""
+
+        versions = self._prompt_versions.setdefault(version.prompt_id, [])
+        versions.append(version)
+        return version
+
+    def get_prompt_versions(self, prompt_id: str) -> List[PromptVersion]:
+        """Return versions for a prompt ordered newest-first."""
+
+        versions = self._prompt_versions.get(prompt_id, [])
+        return sorted(versions, key=lambda v: v.version_number, reverse=True)
+
+    def get_prompt_version(self, prompt_id: str, version_id: str) -> Optional[PromptVersion]:
+        """Fetch a single version for a prompt."""
+
+        for version in self._prompt_versions.get(prompt_id, []):
+            if version.id == version_id:
+                return version
+        return None
+
+    def get_next_version_number(self, prompt_id: str) -> int:
+        """Compute the next sequential version number for a prompt."""
+
+        versions = self._prompt_versions.get(prompt_id, [])
+        if not versions:
+            return 1
+        return max(version.version_number for version in versions) + 1
+    
     # ============== Utility ==============
     
     def clear(self):
-        """Remove all prompts and collections from storage."""
+        """Remove all prompts, collections, and versions from storage."""
 
         self._prompts.clear()
         self._collections.clear()
+        self._prompt_versions.clear()
 
 
 # Global storage instance
