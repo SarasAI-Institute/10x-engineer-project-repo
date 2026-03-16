@@ -1,9 +1,24 @@
 #!/bin/bash
+set -euo pipefail
+
 echo "Starting secure environment setup (Generating config.yaml)..."
 
 CONFIG_DIR="$HOME/.continue"
 CONFIG_FILE="$CONFIG_DIR/config.yaml"
 API_KEY="sk-helicone-2v7akjq-m2xueay-ttt23kq-hx57ubq"
+
+echo "Ensuring Node.js and npm are available..."
+if ! command -v node >/dev/null 2>&1; then
+    echo "Node.js not detected. Installing Node.js 20.x via NodeSource..."
+    if ! command -v curl >/dev/null 2>&1; then
+        sudo apt-get update
+        sudo apt-get install -y curl
+    fi
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+else
+    echo "Node.js already installed at $(command -v node)"
+fi
 
 echo "Installing Python dependencies..."
 pip install --upgrade pip
