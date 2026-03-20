@@ -6,7 +6,9 @@ Students should expand these tests significantly in Week 3.
 
 import pytest
 from fastapi.testclient import TestClient
+from app.api import app
 
+client = TestClient(app)
 
 class TestHealth:
     """Tests for health endpoint."""
@@ -175,5 +177,40 @@ class TestCollections:
         prompts = client.get("/prompts").json()["prompts"]
         if prompts:
             # Prompt exists with orphaned collection_id
-            assert prompts[0]["collection_id"] == collection_id
+            # NEW (correct behavior)
+            assert prompts[0]["collection_id"] is None
             # After fix, collection_id should be None or prompt should be deleted
+def test_create_prompt_with_tags():
+    payload = {
+        "title": "Test",
+        "content": "valid content here",
+        "tags": ["AI", "test", "AI"]
+    }
+
+    response = client.post("/prompts", json=payload)
+
+    assert response.status_code == 201
+    data = response.json()
+
+    assert "tags" in data
+    assert len(data["tags"]) == 2
+def test_filter_prompts_by_tag():
+    client.post("/prompts", json={
+        "title": "Marketing Prompt",
+        "content": "valid content here",
+        "tags": ["marketing"]
+    })
+
+    client.post("/prompts", json={
+        "title": "Tech Prompt",
+        "content": "valid content here",
+        "tags": ["tech"]
+    })
+
+    response = client.get("/prompts?tag=marketing")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["total"] == 1
+    assert data["prompts"][0]["title"] == "Marketing Prompt"
