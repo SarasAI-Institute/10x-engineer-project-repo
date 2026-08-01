@@ -155,13 +155,4 @@ The goal is to learn how to build *better* software *faster* with AI. Don't be a
 
 ---
 
-## Need Help?
-
-1. **Use AI tools** — This is an AI-assisted coding course!
-2. Read the `PROJECT_BRIEF.md` for detailed instructions
-3. Check `GRADING_RUBRIC.md` to understand expectations
-4. Ask questions in the course forum
-
----
-
 Good luck, and welcome to the team! 🚀
