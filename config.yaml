@@ -1,0 +1,70 @@
+name: Course AI - OpenRouter
+version: 1.0.0
+schema: v1
+
+# Shared settings for all OpenRouter models
+studentEmail: &studentEmail "student@email.edu"
+openRouterKey: &openRouterKey "sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+models:
+  - name: "OpenAI: GPT-4o-mini"
+    provider: openrouter
+    model: openai/gpt-4o-mini
+    apiKey: *openRouterKey
+
+    roles:
+      - chat
+      - edit
+      - apply
+
+    defaultCompletionOptions:
+      maxTokens: 16384
+
+    capabilities:
+      - tool_use
+
+    requestOptions:
+      extraBodyProperties:
+        user: *studentEmail
+
+
+  - name: "Kimi: K3"
+    provider: openrouter
+    model: moonshotai/kimi-k3
+    apiKey: *openRouterKey
+
+    roles:
+      - chat
+      - edit
+      - apply
+
+    defaultCompletionOptions:
+      maxTokens: 16384
+
+    capabilities:
+      - tool_use
+
+    requestOptions:
+      extraBodyProperties:
+        user: *studentEmail
+
+
+  - name: "GLM: 5.2"
+    provider: openrouter
+    model: z-ai/glm-5.2
+    apiKey: *openRouterKey
+
+    roles:
+      - chat
+      - edit
+      - apply
+
+    defaultCompletionOptions:
+      maxTokens: 16384
+
+    capabilities:
+      - tool_use
+
+    requestOptions:
+      extraBodyProperties:
+        user: *studentEmail
